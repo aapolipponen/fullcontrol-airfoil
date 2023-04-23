@@ -60,7 +60,7 @@ def airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height):
     Generates a loft between a series of NACA airfoils at different heights and chord lengths.
     
     Parameters:
-        naca_nums (list): A list of the four-digit NACA airfoil numbers.
+        naca_nums (list): A list of the four to six digit NACA airfoil numbers.
         num_points (int): The number of points to generate for each airfoil.
         z_values (list): A list of z-values for the airfoils.
         chord_lengths (list): A list of chord lengths for the airfoils.
@@ -69,35 +69,42 @@ def airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height):
     Returns:
         list: A list of fc.Point objects containing the coordinates of the loft.
     """
-    # Generate airfoils at different heights
-    airfoils = []
-    for i, naca_num in enumerate(naca_nums):
-        airfoils.append(naca_airfoil(naca_num, num_points, z_values[i], chord_lengths[i]))
     
-    # Create layers between airfoils
+    # Generate airfoils at different heights using the given NACA numbers, number of points, z-values, and chord lengths
+    # and store them in a list called airfoils
+    airfoils = [naca_airfoil(num, num_points, z, chord) for num, z, chord in zip(naca_nums, z_values, chord_lengths)]
+    
+    # Create layers between adjacent airfoils and store them in a list called steps
     steps = []
-    for i in range(len(airfoils) - 1):
-        for j in range(int((z_values[i+1] - z_values[i]) / layer_height)):
-            t = j / ((z_values[i+1] - z_values[i]) / layer_height)
-            layer = []
-            for k in range(num_points):
-                p1 = airfoils[i][k]
-                p2 = airfoils[i+1][k]
-                x = (1 - t) * p1.x + t * p2.x
-                y = (1 - t) * p1.y + t * p2.y
-                z = z_values[i] + j * layer_height
-                layer.append(fc.Point(x=x, y=y, z=z))
-            steps += layer
     
+    # Iterate over the pairs of adjacent airfoils
+    for i, (airfoil1, airfoil2) in enumerate(zip(airfoils[:-1], airfoils[1:])):
+        
+        # Determine the number of layers between the current and the next airfoil based on the layer height
+        num_layers = int((z_values[i+1] - z_values[i]) / layer_height)
+        
+        # Iterate over the layers between the current and the next airfoil
+        for j in range(num_layers):
+            
+            # Determine the interpolation factor (t) for the current layer
+            t = j / num_layers
+            
+            # Create a list of points for the current layer by linearly interpolating between the points of the two
+            # adjacent airfoils based on the interpolation factor t and the z-value of the current layer
+            layer = [fc.Point(x=(1-t)*p1.x + t*p2.x, y=(1-t)*p1.y + t*p2.y, z=z_values[i] + j*layer_height)
+                     for p1, p2 in zip(airfoil1, airfoil2)]
+            
+            # Add the points of the current layer to the list of steps
+            steps.extend(layer)
+    
+    # Return the list of points representing the loft
     return steps
 
-
-
 # Example usage
-naca_nums = ['2412', '23012']  # List of NACA airfoil numbers
-num_points = 50
-z_values = [0.0, 10]  # List of z-values for the airfoils
-chord_lengths = [50.0, 35.0]  # Chord lengths of the airfoils
-airfoil_points = []
-steps = airfoil_loft(naca_nums, num_points, z_values, chord_lengths, 0.4)
+naca_nums = ['4412', '23012', '2412']  # List of NACA airfoil numbers
+num_points = 128
+z_values = [0, 10, 15]  # List of z-values for the airfoils
+chord_lengths = [50, 45, 35]  # Chord lengths of the airfoils
+layer_height = 0.2
+steps = airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height)
 fc.transform(steps, 'plot', fc.PlotControls(line_width=4, color_type='print_sequence'))
