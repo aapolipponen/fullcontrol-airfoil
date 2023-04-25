@@ -14,6 +14,6 @@ Todo list for everyone:
 
 Todo list for Aapo:
 - [ ] Basically everything from the other todo list
-- [ ] Answer Issue #2
+- [ ] Close the Issue #2 27.4
 
 A lot of chatgpt was used in the making of this script. I am slowly editing the worst parts out and it shouldn't be a problem anymore.
