@@ -8,10 +8,10 @@ This a project that is in a very alpha state so don't except much.
 **airfoil_loft.py** Takes the base of airfoil.py and creates an average between airfoils if multiple are provided to create a wing. The airfoil generation also is working as intended because the code is much more simpler than the airfoil_loft_vase.py. Other differences between this and airfoil_loft_vase.py are this being a lot more documented, having support for actually printing and not using vase mode. The next step is to create some kind of infill pattern. See: issue #1 And to recreate vase mode for this (An option that can be enabled?). Also making fully filled airfoils (ribs) could be a cool idea if you want to cover the airfoil with film covering to create a very lightweight wing. The wing ribs would need to have a setting for making a hole to pass some kind of support trough them (a spar) that the wing doesn't fall apart.
 
 Todo list for everyone:
-- [ ] Issue #1: Infill
 - [ ] Issue #1 and #3: Wing spars and ribs.
 - [ ] Vase mode implementation for airfoil_loft.py
-- [ ] Add more aifoil generation options: https://en.m.wikipedia.org/wiki/NACA_airfoil
+- [ ] Issue #1: Infill
+- [ ] [Add more aifoil generation options](https://en.m.wikipedia.org/wiki/NACA_airfoil)
 - [ ] Code optimization, adding comments and cleaning up the code
 
 Todo list for Aapo:
