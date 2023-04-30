@@ -1,9 +1,6 @@
 import numpy as np
 import fullcontrol as fc
 import math
-import csv
-
-
 
 def calibration(bed_x_max, bed_y_max):
     calibration = []
@@ -18,7 +15,7 @@ def naca_airfoil(naca_num, num_points, z, chord_length):
     Generates the coordinates of a NACA airfoil at a specific z height and chord length.
     
     Parameters:
-        naca_num (str): The NACA airfoil number.
+        naca_num (str): The four-digit NACA airfoil number.
         num_points (int): The number of points to generate.
         z (float): The z-coordinate at which to generate the airfoil.
         chord_length (float): The chord length of the airfoil.
@@ -26,49 +23,45 @@ def naca_airfoil(naca_num, num_points, z, chord_length):
     Returns:
         list: A list of fc.Point objects containing the coordinates of the NACA airfoil at the specified z height and chord length.
     """
-    x = np.linspace(0, 1, num_points)
-    
-    if len(naca_num) == 4:
-        m = int(naca_num[0]) / 100  # Maximum camber
-        p = int(naca_num[1]) / 10   # Location of maximum camber
-        t = int(naca_num[2:]) / 100 # Maximum thickness
-        
-        y_t = 5*t * (0.2969*np.sqrt(x) - 0.126*x - 0.3516*x**2 + 0.2843*x**3 - 0.1015*x**4)
-        
-        if p == 0 or m == 0:
-            yc = np.zeros_like(x)
-        else:
-            yc = np.where(x < p, m/p**2 * (2*p*x - x**2), m/(1-p)**2 * ((1-2*p) + 2*p*x - x**2))
-        
-    elif len(naca_num) == 5:
-        naca_num = int(naca_num)
-        t = (naca_num % 1000) / 100
-        m = ((naca_num // 1000) % 100) / 100
-        k = (naca_num // 100000) / 100
-        
-        y_t = (t/0.2) * (0.2969*np.sqrt(x) - 0.1260*x - 0.3516*x**2 + 0.2843*x**3 - 0.1036*x**4)
-        yc = (k/0.2) * (0.0580*x**5 - 0.1265*x**4 + 0.3516*x**3 - 0.2843*x**2 + 0.1036*x)
-        
-    else:
-        raise ValueError("Invalid NACA number. Must be 4 or 5 digits long.")
+    naca_num = naca_num.zfill(4) # pad the number with leading zeroes if needed
 
-    theta = np.arctan(np.gradient(yc, x))
-    xu = x - y_t*np.sin(theta)
-    xl = x + y_t*np.sin(theta)
+    m = float(naca_num[0]) / 100  # Maximum camber
+    p = float(naca_num[1]) / 10   # Location of maximum camber
+    t = float(naca_num[2:]) / 100 # Maximum thickness
+
+    x = np.linspace(0, 1, num_points)
+    y_c = np.zeros_like(x)
+    y_t = 5*t * (0.2969*np.sqrt(x) - 0.126*x - 0.3516*x**2 + 0.2843*x**3 - 0.1036*x**4)
+
+    # Calculate camber line and upper/lower surfaces
+    if p == 0 or m == 0:
+        yc = np.zeros_like(x)
+        xu = x
+        xl = x
+        theta = np.zeros_like(x)
+    else:
+        yc = np.where(x < p, m/p**2 * (2*p*x - x**2), m/(1-p)**2 * ((1-2*p) + 2*p*x - x**2))
+        dyc_dx = np.where(x < p, 2*m/p**2 * (p - x), 2*m/(1-p)**2 * (p - x))
+        theta = np.arctan(dyc_dx)
+        xu = x - y_t*np.sin(theta)
+        xl = x + y_t*np.sin(theta)
+
     yu = yc + y_t*np.cos(theta)
     yl = yc - y_t*np.cos(theta)
-    
+
+    # Scale coordinates based on chord length
     xu *= chord_length
     yu *= chord_length
     xl *= chord_length
     yl *= chord_length
-    
+
+    # Generate fc.Point objects
     steps = []
     for i in range(num_points):
         steps.append(fc.Point(x=xu[i], y=yu[i], z=z))
     for i in range(num_points-1, -1, -1):
         steps.append(fc.Point(x=xl[i], y=yl[i], z=z))
-    
+
     return steps
 
 def airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height):
@@ -111,9 +104,17 @@ settings = {
     "bed_temp": 55,
 }
 
-naca_nums = ['2412', '2412']  # List of NACA airfoil numbers
-num_points = 1024  # The resolution / accuracy of your airfoil. 512 = Beatiful, slow 256 = 
-z_values = [0, 40]  # List of z-values for the airfoils
+naca_nums = ['4412', '2412']  # List of NACA airfoil numbers
+num_points = 128  # The resolution / accuracy of your airfoil. 
+# resolution = graphical quality, generation speed, gcode size (using default settings)
+# 1024 = (Dont use this one) Dimishing returns, so slow you don't want to use this one, 22.3 MB
+# 512 = Beatiful, really slow, 11,2 MB
+# 256 = Better, somewhat slow, 5.4 MB
+# 128 = Default, default, 2.7 MB
+# 64 = Worse quality, Fast, 1.3 MB
+# 32 = (Dont use this one) Curves look ok but the leading edge is really really bad, Really fast, 0,7 MB 
+
+z_values = [0, 100]  # List of z-values for the airfoils
 chord_lengths = [100, 75]  # Chord lengths of the airfoils
 
 #NOTE: If you want to enable 3d printing 
@@ -136,9 +137,9 @@ steps = calibration+steps
 # Move extruder up a set amount (Default = 10) after 3D print is done.
 Z_hop = 10
 steps.append(fc.Extruder(on=False))
-steps.append(fc.Point(x=0, y=0, z=+Z_hop))
+steps.append(fc.Point(z=+Z_hop))
 
 fc.transform(steps, 'plot', fc.PlotControls(line_width=0.6, color_type='print_sequence'))
 
-# Uncomment if you want to 3D print.
-#fc.transform(steps, 'gcode', fc.GcodeControls(save_as='my_design', initialization_data=settings)
+# Uncomment if you want to 3D print / generate GCODE.
+#fc.transform(steps, 'gcode', fc.GcodeControls(save_as='my_design', initialization_data=settings))
