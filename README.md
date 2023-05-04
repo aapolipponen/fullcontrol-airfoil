@@ -2,8 +2,6 @@
 
 **airfoil.py** file generates NACA airfoils that can be put to a set z height and their chord size can be changed. The program accepts 4 digit naca airfoils with no leading zeroes in them.
 
-**airfoil_loft_vase.py** does the same thing as the airfoil.py except it smooths between the airfoils to create layers. This version does vase mode but at the cost of the bottom of the airfoil being flat and broken. **This version is out of date compared to airfoil_loft.py. If someonew wants to take the airfoil_loft.py and make it vase mode, feel free to.**
-
 **airfoil_loft.py** Takes the base of airfoil.py and creates an average between airfoils if multiple are provided to create a wing. The airfoil generation also is working as intended because the code is much more simpler than the airfoil_loft_vase.py. Other differences between this and airfoil_loft_vase.py are this being a lot more documented, having support for actually printing and not using vase mode. The next step is to create some kind of infill pattern. See: issue #1 And to recreate vase mode for this (An option that can be enabled?). Also making fully filled airfoils (ribs) could be a cool idea if you want to cover the airfoil with film covering to create a very lightweight wing. The wing ribs would need to have a setting for making a hole to pass some kind of support trough them (a spar) that the wing doesn't fall apart. 3D printing is supported in this version. If you want to create a singlar / single layer airfoil, put the layer height to the second z value. The airfoil.py accepts single airfoils but doesn't support 3D printing.
 
 Todo list for everyone:
