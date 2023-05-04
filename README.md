@@ -10,7 +10,7 @@ Todo list for everyone:
 - [ ] Issue #1 and #3: Wing spars and ribs.
 - [ ] Vase mode implementation for airfoil_loft.py
 - [ ] Issue #1: Infill
-- [ ] [Add more aifoil generation options](https://en.m.wikipedia.org/wiki/NACA_airfoil)
+- [ ] [Add more airfoil generation options](https://en.m.wikipedia.org/wiki/NACA_airfoil)
 - [ ] Code optimization, adding comments and cleaning up the code
 
 
