@@ -179,9 +179,6 @@ chord_lengths = [100, 100]  # Chord lengths of the airfoils
 
 steps = airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height)
 
-# Apply triangle wave infill
-steps = triangle_wave_infill(steps)
-
 # Offset the generated airfoil.
 # If 3D printing make sure to double check this,
 # because it might be different on different printers and airfoils.
