@@ -123,10 +123,9 @@ def find_closest(point, point_list, ignore, condition):
 
 
 def triangle_wave_infill(steps, z, min_x, max_x, infill_density):
-    infill_density = 12
     s_density = max_x / infill_density
         
-    for i in range(infill_density-1, 0, -1):  # Invert the max and min values
+    for i in range(infill_density-1, 0, -1):
         added = max_x - s_density * i
         condition = "greater" if i % 2 == 1 else "less"
         coord = fc.Point(x=added, y=None, z=z)
@@ -159,9 +158,9 @@ settings = {
 
 naca_nums = ['2412', '2412']  # List of NACA airfoil numbers
 num_points = 128 # The resolution / accuracy of your airfoil.
-infill_density = 6 
-z_values = [0.3, 15.3]  # List of z-values for the airfoils
-chord_lengths = [100, 75]  # Chord lengths of the airfoils
+infill_density = 10
+z_values = [0, 10]  # List of z-values for the airfoils
+chord_lengths = [150, 125]  # Chord lengths of the airfoils
 # resolution = graphical quality, generation speed, gcode size (using default settings)
 # 1024 = (Dont use this one) Dimishing returns, so slow you don't want to use this one, 22.3 MB
 # 512 = (Probably don't want to use this either.) Really nice, really slow, 11,2 MB 
@@ -190,7 +189,7 @@ calibration = calibration(bed_x_max = 300, bed_y_max = 300)
 steps = calibration+steps
     
 ## Move extruder up a set amount (Default = 25) after 3D print is done.
-Z_hop = 50
+Z_hop = 25
 steps.append(fc.Extruder(on=False))
 steps.append(fc.Point(z=+Z_hop))
 
