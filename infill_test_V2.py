@@ -158,9 +158,9 @@ settings = {
 
 naca_nums = ['2412', '2412']  # List of NACA airfoil numbers
 num_points = 128 # The resolution / accuracy of your airfoil.
-infill_density = 10
-z_values = [0, 10]  # List of z-values for the airfoils
-chord_lengths = [150, 125]  # Chord lengths of the airfoils
+infill_density = 10 # How dense the infill is.
+z_values = [0, 40]  # List of z-values for the airfoils
+chord_lengths = [100, 75]  # Chord lengths of the airfoils
 # resolution = graphical quality, generation speed, gcode size (using default settings)
 # 1024 = (Dont use this one) Dimishing returns, so slow you don't want to use this one, 22.3 MB
 # 512 = (Probably don't want to use this either.) Really nice, really slow, 11,2 MB 
