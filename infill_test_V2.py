@@ -1,7 +1,6 @@
 import numpy as np
 import fullcontrol as fc
 import math
-from airfoils import Airfoil
 
 def calibration(bed_x_max, bed_y_max):
     calibration = []
@@ -69,7 +68,7 @@ def naca_airfoil(naca_num, num_points, z, chord_length):
     
     return steps
 
-def airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height):
+def airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height, infill_density):
     airfoils = [naca_airfoil(num, num_points, z, chord) for num, z, chord in zip(naca_nums, z_values, chord_lengths)]
 
     steps = []
@@ -98,7 +97,7 @@ def airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height):
                 max_x = max(point.x for point in layer)
 
                 # Apply triangle_wave_infill for the current layer
-                steps = triangle_wave_infill(steps, layer[0].z, min_x, max_x)
+                steps = triangle_wave_infill(steps, layer[0].z, min_x, max_x, infill_density)
 
     return steps
 
@@ -123,11 +122,11 @@ def find_closest(point, point_list, ignore, condition):
     return closest_point
 
 
-def triangle_wave_infill(steps, z, min_x, max_x):
-    density = 24
-    s_density = max_x / density
+def triangle_wave_infill(steps, z, min_x, max_x, infill_density):
+    infill_density = 12
+    s_density = max_x / infill_density
         
-    for i in range(density-1, 0, -1):  # Invert the max and min values
+    for i in range(infill_density-1, 0, -1):  # Invert the max and min values
         added = max_x - s_density * i
         condition = "greater" if i % 2 == 1 else "less"
         coord = fc.Point(x=added, y=None, z=z)
@@ -152,14 +151,17 @@ line_width = 0.4
 settings = {
     "extrusion_width": line_width,
     "extrusion_height": layer_height,
-    "print_speed": 6000,
-    "travel_speed": 8000,
+    "print_speed": 4000,
+    "travel_speed": 6000,
     "nozzle_temp": 220,
     "bed_temp": 55,
 }
 
 naca_nums = ['2412', '2412']  # List of NACA airfoil numbers
-num_points = 128 # The resolution / accuracy of your airfoil. 
+num_points = 128 # The resolution / accuracy of your airfoil.
+infill_density = 6 
+z_values = [0.3, 15.3]  # List of z-values for the airfoils
+chord_lengths = [100, 75]  # Chord lengths of the airfoils
 # resolution = graphical quality, generation speed, gcode size (using default settings)
 # 1024 = (Dont use this one) Dimishing returns, so slow you don't want to use this one, 22.3 MB
 # 512 = (Probably don't want to use this either.) Really nice, really slow, 11,2 MB 
@@ -168,13 +170,10 @@ num_points = 128 # The resolution / accuracy of your airfoil.
 # 64 = Worse quality, Fast, 1.3 MB
 # 32 = (Dont use this one) Curves look ok but the leading edge is really really bad, Really fast, 0,7 MB 
 
-z_values = [0, 15]  # List of z-values for the airfoils
-chord_lengths = [100, 75]  # Chord lengths of the airfoils
-
 # NOTE: If you want to enable 3d printing 
 # uncomment the things down after fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence'))
 
-steps = airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height)
+steps = airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height, infill_density)
 
 # Debug
 #print(steps)
@@ -191,7 +190,7 @@ calibration = calibration(bed_x_max = 300, bed_y_max = 300)
 steps = calibration+steps
     
 ## Move extruder up a set amount (Default = 25) after 3D print is done.
-Z_hop = 25
+Z_hop = 50
 steps.append(fc.Extruder(on=False))
 steps.append(fc.Point(z=+Z_hop))
 
