@@ -1,9 +1,6 @@
 import numpy as np
 import fullcontrol as fc
 import math
-import csv
-
-
 
 def calibration(bed_x_max, bed_y_max):
     calibration = []
@@ -26,6 +23,7 @@ def naca_airfoil(naca_num, num_points, z, chord_length):
     Returns:
         list: A list of fc.Point objects containing the coordinates of the NACA airfoil at the specified z height and chord length.
     """
+    
     x = np.linspace(0, 1, num_points)
     
     if len(naca_num) == 4:
@@ -62,13 +60,13 @@ def naca_airfoil(naca_num, num_points, z, chord_length):
     yu *= chord_length
     xl *= chord_length
     yl *= chord_length
-    
+
     steps = []
     for i in range(num_points):
         steps.append(fc.Point(x=xu[i], y=yu[i], z=z))
     for i in range(num_points-1, -1, -1):
         steps.append(fc.Point(x=xl[i], y=yl[i], z=z))
-    
+
     return steps
 
 def airfoil_loft(naca_nums, num_points, z_values, chord_lengths, layer_height):
@@ -111,8 +109,8 @@ settings = {
     "bed_temp": 55,
 }
 
-naca_nums = ['2412', '2412']  # List of NACA airfoil numbers
-num_points = 1024  # The resolution / accuracy of your airfoil. 512 = Beatiful, slow 256 = 
+naca_nums = ['4412', '2412']  # List of NACA airfoil numbers
+num_points = 128  # The resolution / accuracy of your airfoil. 512 = Beatiful, slow 256 = 
 z_values = [0, 40]  # List of z-values for the airfoils
 chord_lengths = [100, 75]  # Chord lengths of the airfoils
 
@@ -133,12 +131,12 @@ steps = fc.move(steps, fc.Vector(y=100))
 calibration = calibration(bed_x_max = 300, bed_y_max = 300)
 steps = calibration+steps
      
-# Move extruder up a set amount (Default = 10) after 3D print is done.
-Z_hop = 10
+# Move extruder up a set amount (Default = 25) after 3D print is done.
+Z_hop = 25
 steps.append(fc.Extruder(on=False))
 steps.append(fc.Point(x=0, y=0, z=+Z_hop))
 
-fc.transform(steps, 'plot', fc.PlotControls(line_width=0.6, color_type='print_sequence'))
+fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence'))
 
 # Uncomment if you want to 3D print.
 #fc.transform(steps, 'gcode', fc.GcodeControls(save_as='my_design', initialization_data=settings)
