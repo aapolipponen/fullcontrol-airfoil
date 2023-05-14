@@ -201,7 +201,7 @@ circle_radiuses = [0, 0]
 circle_centers = [fc.Point(x=94, y=0.8, z=0), fc.Point(x=94, y=0.8, z=max(z_values))]
 circle_num_points = 15
 
-airfoils = airfoil_wrapper(naca_nums, num_points, z_values, chord_lengths, file_extraction, filenames, generate_elliptical)
+airfoils = airfoil_wrapper(naca_nums, num_points, z_values, chord_lengths, file_extraction, filenames)
 steps = parallel_loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type)
 
 # Debug
