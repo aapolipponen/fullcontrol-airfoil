@@ -182,7 +182,7 @@ num_points = 128 # The resolution / accuracy of your airfoil (and circle by defa
 # 128 = Default, default, 2.7 MB
 # 64 = Worse quality, Fast, 1.3 MB
 
-# File extraction
+# File extraction (WARNING: BETA, May not work correctly.)
 file_extraction = False # If you want to extract data from a file. False If you want to use the 4-Digit NACA airfoil method for generating airfoils instead.
 filenames = ['data.dat', 'data.dat'] # If you want to extract the coordinates from a file.
 
