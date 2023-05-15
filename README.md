@@ -6,7 +6,7 @@
 
 **airfoil_loft_infill.py** Same as airfoil_loft.py but has infill. The infill is a triangle wave going between the two sides of the airfoil and moving in x by a set amount defined by the infill_density variable. If the infill_density variable is bigger, then the code creates more triangles in that take less x space. And if the infill_density is smaller, then the code creates less triangles that take more x space.
 
-**airfoil_loft_infill_beta.py** Same as airfoil_loft_infill.py, but added importing airfoils, put the project into different scripts and neatened up the settings part. Multithreading is also in testing and already pushed. (Only improved the time by few seconds on a large 30 second wing. Not sure if it will be kept because of code simplicity.) Also circles are now able to be placed at any coordinates with any radiuses. This can be used to add for example a space to put a carbon fiber rod for making the wing more durable.
+**airfoil_loft_infill_beta.py** Same as airfoil_loft_infill.py, but added importing airfoils, put the project into different scripts and neatened up the settings part. Multithreading is also in testing and already pushed. (Only improved the time by few seconds on a large 30 second wing. Not sure if it will be kept because of code simplicity.) Also circles are now able to be placed at any coordinates with any radiuses. This can be used to add for example a space to put a carbon fiber rod for making the wing more durable. Infill options other than infill_triangle are broken at the moment.
 
 Todo list:
 - [ ] Creating elliptical wings.
