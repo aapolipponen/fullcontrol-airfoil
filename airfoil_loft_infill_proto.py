@@ -6,6 +6,7 @@ from infill_modified_triangle import modified_triangle_wave_infill
 from infill_rectilinear import rectilinear_infill
 from circle_utils import create_circle, generate_circle_layers, is_point_inside_circle, remove_intersecting_points, lerp_points
 import concurrent.futures
+from scipy.interpolate import interp1d
 
 
 def calibration(bed_x_max, bed_y_max):
@@ -16,10 +17,72 @@ def calibration(bed_x_max, bed_y_max):
     calibration.append(fc.Extruder(on=True))
     return calibration
 
-def airfoil_wrapper(naca_nums, num_points, z_values, chord_lengths, naca_airfoil_generation, filenames):
-    
+def naca_airfoil(naca_num, num_points, chord_length):
+    steps_upper = []
+    steps_lower = []
+    x = np.linspace(0, 1, num_points)
+    if len(naca_num) == 4 or len(naca_num) == 3:
+        m = int(naca_num[0]) / 100
+        p = int(naca_num[1]) / 10
+        t = int(naca_num[2:]) / 100
+        y_t = 5*t * (0.2969*np.sqrt(x) - 0.126*x - 0.3516*x**2 + 0.2843*x**3 - 0.1015*x**4)
+        if p == 0:
+            yc = np.zeros_like(x)
+        elif m == 0:
+            yc = np.zeros_like(x)
+        else:
+            yc = np.where(x < p, m/p**2 * (2*p*x - x**2), m/(1-p)**2 * ((1-2*p) + 2*p*x - x**2))
+    else:
+        raise ValueError("Invalid NACA number. Must be 4 digits long.")
+    theta = np.arctan(np.gradient(yc, x))
+    xu = x - y_t * np.sin(theta)
+    xl = x + y_t * np.sin(theta)
+    yu = yc + y_t * np.cos(theta)
+    yl = yc - y_t * np.cos(theta)
+    xu *= chord_length
+    yu *= chord_length
+    xl *= chord_length
+    yl *= chord_length
+    for i in range(num_points):
+        steps_upper.append(fc.Point(x=xu[i], y=yu[i], z=0))
+    for i in range(num_points-1, -1, -1):
+        steps_lower.append(fc.Point(x=xl[i], y=yl[i], z=0))
+    steps = steps_upper + steps_lower
+    return steps
+
+
+def linear_interpolate(x, x_values, y_values):
+    if x <= x_values[0]:
+        return y_values[0]
+    elif x >= x_values[-1]:
+        return y_values[-1]
+    else:
+        for i in range(len(x_values) - 1):
+            if x_values[i] <= x <= x_values[i+1]:
+                t = (x - x_values[i]) / (x_values[i+1] - x_values[i])
+                return y_values[i] * (1 - t) + y_values[i+1] * t
+    return None
+
+def generate_elliptical_wing(naca_nums, num_points, z_values, chord_lengths, file_extraction, filenames, major_axis, minor_axis, num_interpolated_points=100):
+    # Generate a high-resolution list of z_values
+    z_values_high_res = np.linspace(min(z_values), max(z_values), num_interpolated_points)
+
+    # Normalize t for the high-resolution z_values and flip it
+    t_high_res = 1 - ((z_values_high_res - min(z_values)) / (max(z_values) - min(z_values)))
+
+    # Adjust chord_lengths according to ellipse parameters
+    chord_lengths = [major_axis * np.cos(np.pi * t_i) for t_i in t_high_res]
+
+    # Interpolate user-inputted chord lengths for high-resolution z_values
+    chord_lengths_high_res = [linear_interpolate(z, z_values, chord_lengths) for z in z_values_high_res]
+
+    # Generate airfoils after the adjustments
+    airfoils = airfoil_wrapper(naca_nums, num_points, z_values_high_res, chord_lengths_high_res, file_extraction, filenames)
+
+    return airfoils, z_values_high_res, chord_lengths_high_res
+
+def airfoil_wrapper(naca_nums, num_points, z_values, chord_lengths, naca_airfoil_generation, filenames):    
     airfoils = []
-    
 
     def airfoil_extract(chord_length, filename):
         steps = []
@@ -31,42 +94,7 @@ def airfoil_wrapper(naca_nums, num_points, z_values, chord_lengths, naca_airfoil
             x, y = map(float, line.split())
             steps.append(fc.Point(x=x*chord_length, y=y*chord_length, z=0))
         return steps
-                
-    def naca_airfoil(naca_num, num_points, chord_length):
-        steps_upper = []
-        steps_lower = []
-        x = np.linspace(0, 1, num_points)
-        if len(naca_num) == 4 or len(naca_num) == 3:
-            m = int(naca_num[0]) / 100
-            p = int(naca_num[1]) / 10
-            t = int(naca_num[2:]) / 100
-            y_t = 5*t * (0.2969*np.sqrt(x) - 0.126*x - 0.3516*x**2 + 0.2843*x**3 - 0.1015*x**4)
-            if p == 0:
-                yc = np.zeros_like(x)
-            elif m == 0:
-                yc = np.zeros_like(x)
-            else:
-                yc = np.where(x < p, m/p**2 * (2*p*x - x**2), m/(1-p)**2 * ((1-2*p) + 2*p*x - x**2))
-        else:
-            raise ValueError("Invalid NACA number. Must be 4 digits long.")
-
-        theta = np.arctan(np.gradient(yc, x))
-        xu = x - y_t * np.sin(theta)
-        xl = x + y_t * np.sin(theta)
-        yu = yc + y_t * np.cos(theta)
-        yl = yc - y_t * np.cos(theta)
-        xu *= chord_length
-        yu *= chord_length
-        xl *= chord_length
-        yl *= chord_length
-        for i in range(num_points):
-            steps_upper.append(fc.Point(x=xu[i], y=yu[i], z=0))
-        for i in range(num_points-1, -1, -1):
-            steps_lower.append(fc.Point(x=xl[i], y=yl[i], z=0))
-
-        steps = steps_upper + steps_lower
-        return steps
-    
+                    
     if naca_airfoil_generation:
         for z_value, chord_length, filename in zip(z_values, chord_lengths, filenames):
             airfoil = airfoil_extract(chord_length, filename)
@@ -100,10 +128,11 @@ def create_single_layer(args):
             layers.append(layer)
     return layers
 
-def parallel_loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type, is_elliptical):
+def loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type):    
+    # (BETA) Multithreading.
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        layers = list(executor.map(create_single_layer, [(i, shape1, shape2, z_values, layer_height) for i, (shape1, shape2) in enumerate(zip(airfoils[:-1], airfoils[1:]))]))
-    
+        layers = list(executor.map(create_single_layer, [(i, shape1, shape2, z_values, layer_height) for i, (shape1, shape2) in enumerate(zip(airfoils[:-1], airfoils[1:]))]))    
+
     steps = []
 
     # Flatten the layers list
@@ -142,20 +171,13 @@ def parallel_loft_shapes(airfoils, z_values, layer_height, infill_density, gener
 
     return steps
 
-def generate_elliptical_airfoil(a, b, num_points):
-    t_values = np.linspace(0, 2*np.pi, num_points)
-    airfoil = []
-    for t in t_values:
-        x = a * b / np.sqrt((b*np.cos(t))**2 + (a*np.sin(t))**2)
-        airfoil.append(fc.Point(x=x))
-    return airfoil
 
 # SETTINGS
 
 # 3D printing settings
 # NOTE: If you want to enable 3d printing 
 # uncomment the things down after fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence'))
-layer_height = 0.3
+layer_height = 0.1
 line_width = 0.4
 ## Move extruder up a set amount (Default = 25) after 3D print is done.
 Z_hop = 25 
@@ -187,11 +209,16 @@ file_extraction = False # If you want to extract data from a file. False If you 
 filenames = ['data.dat', 'data.dat'] # If you want to extract the coordinates from a file.
 
 # Wing parameters
-z_values = [0, 40]  # List of z-values for the airfoils
-chord_lengths = [100, 75]  # Chord lengths of the airfoils
+z_values = [0, 300]  # List of z-values for the airfoils
+chord_lengths = [150, 100]  # Chord lengths of the airfoils
+
+# Elliptical Wing Generation
+generate_elliptical = True
+major_axis = 150
+minor_axis = 150
 
 # Infill
-generate_infill = True
+generate_infill = False
 infill_density = 12 # How dense the infill is.
 infill_type = triangle_wave_infill#modified_triangle_wave_infill#rectilinear_infill
 
@@ -201,8 +228,14 @@ circle_radiuses = [0, 0]
 circle_centers = [fc.Point(x=94, y=0.8, z=0), fc.Point(x=94, y=0.8, z=max(z_values))]
 circle_num_points = 15
 
-airfoils = airfoil_wrapper(naca_nums, num_points, z_values, chord_lengths, file_extraction, filenames, generate_elliptical)
-steps = parallel_loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type)
+if generate_elliptical:
+    airfoils, z_values_high_res, chord_lengths_high_res = generate_elliptical_wing(naca_nums, num_points, z_values, chord_lengths, file_extraction, filenames, major_axis, minor_axis)
+    steps = loft_shapes(airfoils, z_values_high_res, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type)
+else:
+    airfoils = airfoil_wrapper(naca_nums, num_points, z_values, chord_lengths, file_extraction, filenames)
+    steps = loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type)
+    
+#cProfile.run('parallel_loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type)')
 
 # Debug
 #print(steps)
@@ -216,12 +249,12 @@ offset_y = 100
 offset_z = 0 # If the nozzle is digging to the bed while printing the first layer and printers own z offset is adjusted correctly.
 # The 3D printers own z offset might not work using fullcontrol.
  
-steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
+#steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
 
 # Show the bed / build area size, with the cost of an extra travel move at the start of the gcode.
 # Works also without 3d printing
-calibration = calibration(bed_x_max = 300, bed_y_max = 300)
-steps = calibration+steps
+#calibration = calibration(bed_x_max = 300, bed_y_max = 300)
+#steps = calibration+steps
 
 ## Move extruder up a set amount (Default = 25) after 3D print is done.
 steps.append(fc.Extruder(on=False))
