@@ -2,14 +2,14 @@ import fullcontrol as fc
 import math
 import numpy as np
 
-def create_circle_segment(center, radius, num_points, start_theta, end_theta, start_angle):
+def create_circle_segment(center, radius, num_points, start_theta, end_theta, start_angle, z):
     segment_points = np.linspace(start_theta, end_theta, num_points)
     points = []
     
     for theta in segment_points:
         x = center.x + radius * np.cos(theta + start_angle)
         y = center.y + radius * np.sin(theta + start_angle)
-        points.append(fc.Point(x=x, y=y, z=center.z))
+        points.append(fc.Point(x=x, y=y, z=z))
     
     return points
 
@@ -37,8 +37,8 @@ def create_circles(center_pairs, radius, offset, z, num_points, start_angle_deg,
                 segment_start_angle = start_angle_rad + i * segment_angle_rad
                 segment_end_angle = segment_start_angle + segment_angle_rad
 
-                outer_segment = create_circle_segment(center, outer_radius, num_points, segment_start_angle, segment_end_angle, start_angle_rad)
-                inner_segment = create_circle_segment(center, inner_radius, num_points, segment_start_angle, segment_end_angle, start_angle_rad)
+                outer_segment = create_circle_segment(center, outer_radius, num_points, segment_start_angle, segment_end_angle, start_angle_rad, z)
+                inner_segment = create_circle_segment(center, inner_radius, num_points, segment_start_angle, segment_end_angle, start_angle_rad, z)
 
                 # Add segments to points alternately
                 points.extend(outer_segment)

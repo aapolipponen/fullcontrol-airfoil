@@ -115,8 +115,6 @@ def loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infil
         if generate_circle:
             circle_layers = create_circles(circle_centers, circle_radiuses, circle_offset, layer[0].z, circle_num_points, circle_start_angle, circle_segment_ratio)
         steps.extend(circle_layers)
-
-
     
     return steps
 
@@ -171,14 +169,14 @@ infill_type = modified_triangle_wave_infill # Default and recommended = modified
 # Circle generation
 generate_circle = True
 circle_centers = [
-    [fc.Point(x=37.5, y=1.75, z=min(z_values)), fc.Point(x=37.5, y=1.75, z=max(z_values))], 
+    [fc.Point(x=28.5, y=1.75, z=min(z_values)), fc.Point(x=28.5, y=1.75, z=max(z_values))], 
 ]
-circle_radiuses = 5
-circle_num_points = 32
+circle_radiuses = 3.5
+circle_num_points = 24
 
 circle_offset = 0.75 # Offset of the second circle being generated
-circle_segment_ratio = 45 # How much of the circle is drawn in one pass
-circle_start_angle = 90 # Start angle for the outer circle.
+circle_segment_ratio = 45 # How much of the circle is drawn in one pass (angle)
+circle_start_angle = 90 # Start angle for the circle.
 
 steps = loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type, infill_reverse, circle_offset, circle_segment_ratio, circle_start_angle)
 
