@@ -2,28 +2,46 @@ import fullcontrol as fc
 import math
 import numpy as np
 
-def lerp_points(p1, p2, t):
-    return fc.Point(x=(1 - t) * p1.x + t * p2.x, y=(1 - t) * p1.y + t * p2.y, z=(1 - t) * p1.z + t * p2.z)
-
-def draw_circle(center, radius, num_points):
+def create_circle_segment(center, radius, num_points, start_theta, end_theta, start_angle):
+    segment_points = np.linspace(start_theta, end_theta, num_points)
     points = []
-
-    # Calculate points along the circle
-    angles = np.linspace(0, 2*np.pi, num_points)
-    x_values = center.x + radius * np.cos(angles)
-    y_values = center.y + radius * np.sin(angles)
-
-    for x, y in zip(x_values, y_values):
+    
+    for theta in segment_points:
+        x = center.x + radius * np.cos(theta + start_angle)
+        y = center.y + radius * np.sin(theta + start_angle)
         points.append(fc.Point(x=x, y=y, z=center.z))
-
+    
     return points
 
-def draw_circles(radiuses, centers, num_points):
-    all_points = []
+def create_circles(center_pairs, radius, offset, z, num_points, start_angle_deg=90, segment_angle_deg=40):
+    points = []
 
-    for radius, center in zip(radiuses, centers):
-        # Draw a circle
-        circle_points = draw_circle(center, radius, num_points)
-        all_points.extend(circle_points)
+    # Convert segment angle and start angle to radians
+    segment_angle_rad = math.radians(segment_angle_deg)
+    start_angle_rad = math.radians(start_angle_deg)
 
-    return all_points
+    for center_pair in center_pairs:
+        start_center, end_center = center_pair
+
+        for center in (start_center, end_center):
+            # If z is not within the bounds, use center.z
+            if z is not None and start_center.z <= z <= end_center.z:
+                center.z = z
+
+            outer_radius = radius
+            inner_radius = radius - offset
+
+            # Create segments for each circle
+            num_segments = int(2*math.pi / segment_angle_rad)
+            for i in range(num_segments):
+                segment_start_angle = start_angle_rad + i * segment_angle_rad
+                segment_end_angle = segment_start_angle + segment_angle_rad
+
+                outer_segment = create_circle_segment(center, outer_radius, num_points, segment_start_angle, segment_end_angle, start_angle_rad)
+                inner_segment = create_circle_segment(center, inner_radius, num_points, segment_start_angle, segment_end_angle, start_angle_rad)
+
+                # Add segments to points alternately
+                points.extend(outer_segment)
+                points.extend(inner_segment)
+
+    return points
