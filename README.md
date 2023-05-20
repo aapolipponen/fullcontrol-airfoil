@@ -6,6 +6,7 @@ The infill is a triangle wave going between the two sides of the airfoil and mov
 Circles are now able to be placed at any coordinates with any radiuses. This can be used to add for example a space to put a carbon fiber rod for making the wing more durable. Infill options other than modified infill_triangle are broken at the moment.
 
 Todo list:
+- [ ] More documentation
 - [ ] Issue #1 and #3: Wing spars and ribs. (Spars partly implemented.) Ribs proved to be a bit hard. Still probably going to do that pretty soom.
 - [ ] Issue #1: Infill
 - [ ] Creating elliptical wings.
