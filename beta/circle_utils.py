@@ -13,7 +13,7 @@ def create_circle_segment(center, radius, num_points, start_theta, end_theta, st
     
     return points
 
-def create_circles(center_pairs, radius, offset, z, num_points, start_angle_deg=90, segment_angle_deg=40):
+def create_circles(center_pairs, radius, offset, z, num_points, start_angle_deg, segment_angle_deg):
     points = []
 
     # Convert segment angle and start angle to radians
