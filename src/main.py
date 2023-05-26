@@ -2,6 +2,7 @@ import numpy as np
 import fullcontrol as fc
 from infill_modified_triangle import modified_triangle_wave_infill
 from circle_utils import create_circles
+from scipy.optimize import curve_fit
 
 def calibration(bed_x_max, bed_y_max):
     calibration = []
@@ -15,8 +16,7 @@ def airfoil_wrapper(naca_nums, num_points, z_values, chord_lengths, naca_airfoil
     
     airfoils = []
     
-
-    def airfoil_extract(chord_length, filename):
+    def airfoil_extract(chord_length, filename, interpolate=True):
         steps = []
         with open("profiles/"+filename, 'r') as file:
             lines = file.readlines()
@@ -80,41 +80,59 @@ def lerp_points(p1, p2, t):
     z = p1.z * (1 - t) + p2.z * t
     return fc.Point(x=x, y=y, z=z)
 
-def create_single_layer(args):
-    i, shape1, shape2, z_values, layer_height = args
-    num_layers = int((z_values[i+1] - z_values[i]) / layer_height)
-    layers = []
-    if num_layers > 0:
-        for j in range(num_layers):
-            t = j / num_layers
-            layer = [lerp_points(p1, p2, t) for p1, p2 in zip(shape1, shape2)]
-            layers.append(layer)
-    return layers
-
-def loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle):
-    layers = []
-    circle_layers = []
+def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, elliptical=True):
     steps = []
 
-    for i in range(len(airfoils) - 1):
-        shape1, shape2 = airfoils[i], airfoils[i+1]
-        layers.append(create_single_layer((i, shape1, shape2, z_values, layer_height)))
+    # Get the Z position where the chord length should be the largest
+    max_chord_length_z = z_values[chord_lengths.index(max(chord_lengths))]
+    max_chord_length = max(chord_lengths)
 
-    # Flatten the layers list
-    layers = [point for sublist in layers for point in sublist]
+    # Semi-major axis (a) is the max z value
+    a = max(z_values)
+    # Semi-minor axis (b) is the max chord length
+    b = max_chord_length
 
-    for layer in layers:
-        steps.extend(layer)
+    # Precompute the linear interpolation value
+    chord_length_diff = chord_lengths[-1] - chord_lengths[0]
 
-        if generate_infill:
-            min_x = min(point.x for point in layer)
-            max_x = max(point.x for point in layer)
-            if infill_type == modified_triangle_wave_infill:
-                steps = modified_triangle_wave_infill(steps, layer[0].z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise)
-                
-        if generate_circle:
-            circle_layers = create_circles(circle_centers, circle_radiuses, circle_offset, circle_num_points, circle_start_angle, circle_segment_angle, layer[0].z)
-        steps.extend(circle_layers)
+    for i in range(len(z_values) - 1):
+        num_layers = int((z_values[i+1] - z_values[i]) / layer_height)
+        current_z = z_values[i]  # Store the current z value
+        
+        for j in range(num_layers):
+            z = current_z + j * layer_height
+    
+            # normalized height within current segment
+            t = j / num_layers
+            
+            if elliptical:
+                # Get the distance from the maximum chord length position
+                distance_from_peak = abs(z - max_chord_length_z)
+
+                # Compute the chord length based on the semi-axes and the distance from the peak
+                chord_length = b * np.sqrt(1 - (distance_from_peak/a)**2)
+
+            else:
+                # Linear interpolation
+                chord_length = chord_lengths[i] + chord_length_diff * t 
+            
+            airfoil = airfoil_wrapper([naca_nums[i]], num_points, [z], [chord_length], file_extraction, [filenames[i]])[0]
+
+            layer = airfoil
+
+            if generate_infill:
+                min_x = min(point.x for point in airfoil)
+                max_x = max(point.x for point in airfoil)
+                if infill_type == modified_triangle_wave_infill:
+                    layer.extend(modified_triangle_wave_infill(steps, z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise))
+            
+            if generate_circle:
+                layer.extend(create_circles(circle_centers, circle_radius, circle_offset, circle_num_points, circle_start_angle, circle_segment_angle, z))
+        
+            # After completing the layer, move to next layer.
+            steps.extend(fc.travel_to(fc.Point(x=0, y=0, z=z+layer_height)))
+            
+            steps.extend(layer)
     
     return steps
 
@@ -150,7 +168,7 @@ num_points = 128 # The resolution / accuracy of your airfoil.
 # 64 = Worse quality, Fast, 1.3 MB
 
 # File extraction (WARNING: BETA, May not work correctly.)
-# When using this the chord lenght works as a multiplier.
+# When using this the chord length works as a multiplier.
 file_extraction = False # If you want to extract data from a file. False If you want to use the 4-Digit NACA airfoil method for generating airfoils instead.
 filenames = ['naca2412.dat', 'naca2412.dat'] # If you want to extract the coordinates from a file.
 
@@ -158,10 +176,8 @@ filenames = ['naca2412.dat', 'naca2412.dat'] # If you want to extract the coordi
 z_values = [0, 40]  # List of z-values for the airfoils
 chord_lengths = [100, 75]  # Chord lengths of the airfoils
 
-airfoils = airfoil_wrapper(naca_nums, num_points, z_values, chord_lengths, file_extraction, filenames)
-
 # Infill
-generate_infill = False
+generate_infill = True
 infill_density = 8 # How dense the infill is.
 infill_reverse = False # Use if using file_extraction and starting point for airfoil is closer to or at the max x coordinate.
 infill_rise = False # Only for when using modified_triangle_infill. Raises the infill by layer_height/2 when coming back to min_x, to decrease the distance to hop to next layer.
@@ -169,18 +185,19 @@ infill_type = modified_triangle_wave_infill # Default and recommended = modified
 # No other infill options at this moment. Create your own one!
 
 # Circle generation
-generate_circle = True
+generate_circle = False
 circle_centers = [
-    {"start_center": fc.Point(x=28.5, y=1.75, z=min(z_values)), "end_center": fc.Point(x=28.5, y=1.75, z=50)},
+    {"start_center": fc.Point(x=37.763, y=1.75, z=min(z_values)), "end_center": fc.Point(x=28.393, y=1.75, z=40)}, # These are without the offset of the airfoil. And the end center z value is maxed at the airfoil z height.
 ]
-circle_radiuses = 3.5
+circle_radius = 3.75
 circle_num_points = 24
-
 circle_offset = 0.75 # Offset of the second circle being generated
 circle_segment_angle = 45 # How much of the circle is drawn in one pass (angle)
-circle_start_angle = 0 # Start angle for the circle.
+circle_start_angle = 180 # Start angle for the circle.
 
-steps = loft_shapes(airfoils, z_values, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radiuses, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle)
+elliptical = False
+
+steps = loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, elliptical)
 
 # Offset the generated airfoil.
 # If 3D printing make sure to double check this,
@@ -189,8 +206,8 @@ offset_x = 50
 offset_y = 100
 offset_z = 0 # If the nozzle is digging to the bed while printing the first layer and printers own z offset is adjusted correctly.
 # The 3D printers own z offset might not work using fullcontrol.
- 
-steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
+
+#steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
 
 # Show the bed / build area size, with the cost of an extra travel move at the start of the gcode.
 # Works also without 3d printing

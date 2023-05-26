@@ -7,7 +7,8 @@ def find_closest(point, point_list, condition):
     closest_point = None
 
     for p in point_list:
-        if p.z == point.z and ((condition and p.y > 0) or (not condition and p.y < 0)):
+        # Check if p has a 'z' attribute before trying to access it. Done because of fc.travel_to.
+        if hasattr(p, 'z') and p.z == point.z and ((condition and p.y > 0) or (not condition and p.y < 0)):
             distance = abs(point.x - p.x)
             if distance < min_distance:
                 min_distance = distance
