@@ -127,7 +127,7 @@ def lerp_points(p1, p2, t):
     z = p1.z * (1 - t) + p2.z * t
     return fc.Point(x=x, y=y, z=z)
 
-def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, curved_trailing_edge, curved_leading_edge, move_leading_edge, move_trailing_edge):
+def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, elliptical_wing, move_leading_edge, move_trailing_edge):
     steps = []
 
     for i in range(len(z_values) - 1):
@@ -142,27 +142,38 @@ def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, cho
             # Normalized height within current segment
             t = j / num_layers
             
+            # Interpolate chord length
+            if elliptical_wing:
+                # Quadratic interpolation
+                chord_length = chord_lengths[i] + chord_length_diff * (t**2)
+            else:
+                # Linear interpolation
+                chord_length = chord_lengths[i] + chord_length_diff * t 
+            
             # Linear interpolation
-            chord_length = chord_lengths[i] + chord_length_diff * t 
+            #chord_length = chord_lengths[i] + chord_length_diff * t 
 
             airfoil = airfoil_wrapper([naca_nums[i]], num_points, [z], [chord_length], file_extraction, [filenames[i]])[0]
 
             # Move airfoil based on chord lengths if edge is not static
-            if move_trailing_edge == False & move_leading_edge == False:
-                delta_x = (chord_lengths[i] - chord_length) / 2
-                for point in airfoil:
-                    point.x += delta_x
-            
-            if move_leading_edge:
+            if move_trailing_edge:
+                if move_leading_edge:
+                    delta_x = (chord_lengths[i] - chord_length) / 2
+                    for point in airfoil:
+                        point.x += delta_x
+                else:
+                    pass  # Do nothing
+                
+            elif move_leading_edge:
                 delta_x = (chord_lengths[i] - chord_length)
                 for point in airfoil:
                     point.x += delta_x
-                    
-            if move_leading_edge & move_leading_edge:
+
+            else:
                 delta_x = (chord_lengths[i] - chord_length) / 2
                 for point in airfoil:
                     point.x += delta_x
-
+                    
             layer = airfoil
 
             min_x = min(point.x for point in airfoil)
@@ -247,7 +258,9 @@ circle_start_angle = 180 # Start angle for the circle.
 move_leading_edge = False # Makes the leading edge not static.
 move_trailing_edge = False # Makes the trailing edge not static.
 
-steps = loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, curved_trailing_edge, curved_leading_edge, move_leading_edge, move_trailing_edge)
+elliptical_wing = True
+
+steps = loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, elliptical_wing, move_leading_edge, move_trailing_edge)
 
 # Offset the generated airfoil.
 # If 3D printing make sure to double check this,
@@ -261,14 +274,12 @@ offset_z = 0 # If the nozzle is digging to the bed while printing the first laye
 
 # Show the bed / build area size, with the cost of an extra travel move at the start of the gcode.
 # Works also without 3d printing
-
-#calibration = calibration(bed_x_max = 300, bed_y_max = 300)
-#steps = calibration+steps
+calibration = calibration(bed_x_max = 300, bed_y_max = 300)
+steps = calibration+steps
 
 # Move extruder up a set amount (Default = 25) after 3D print is done.
-
-#steps.append(fc.Extruder(on=False))
-#steps.append(fc.Point(z=+Z_hop))
+steps.append(fc.Extruder(on=False))
+steps.append(fc.Point(z=+Z_hop))
 
 fc.transform(steps, 'plot', fc.PlotControls(line_width = line_width*10, color_type='print_sequence'))
 
@@ -279,4 +290,4 @@ end = time.time()
 
 time_to_generate = end-start
 
-print('Generated in: '+str(time_to_generate)+' s')
+print('Generated in: '+str(round(time_to_generate, 5))+' s')
