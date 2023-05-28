@@ -242,11 +242,11 @@ infill_type = modified_triangle_wave_infill # Default and recommended = modified
 # No other infill options at this moment. Create your own one!
 
 # Circle generation
-generate_circle = False
+generate_circle = True
 circle_centers = [
-    {"start_center": fc.Point(x=37.763, y=1.75, z=min(z_values)), "end_center": fc.Point(x=17.863, y=1.75, z=40)}, # These are without the offset of the airfoil. And the end center z value is maxed at the airfoil z height.
+    {"start_center": fc.Point(x=37.763, y=1.25, z=min(z_values)), "end_center": fc.Point(x=32.945, y=1.25, z=40)}, # These are without the offset of the airfoil. And the end center z value is maxed at the airfoil z height.
 ]
-circle_radius = 3.75
+circle_radius = 4
 circle_num_points = 24
 circle_offset = 0.75 # Offset of the second circle being generated
 circle_segment_angle = 45 # How much of the circle is drawn in one pass (angle)
@@ -255,8 +255,8 @@ circle_start_angle = 180 # Start angle for the circle.
 # Curvature
 
 # These variables need better names
-move_leading_edge = False # Makes the leading edge not static.
-move_trailing_edge = False # Makes the trailing edge not static.
+move_leading_edge = True # Makes the leading edge not static.
+move_trailing_edge = True # Makes the trailing edge not static.
 
 elliptical_wing = True
 
@@ -270,7 +270,7 @@ offset_y = 100
 offset_z = 0 # If the nozzle is digging to the bed while printing the first layer and printers own z offset is adjusted correctly.
 # The 3D printers own z offset might not work using fullcontrol.
 
-#steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
+steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
 
 # Show the bed / build area size, with the cost of an extra travel move at the start of the gcode.
 # Works also without 3d printing
