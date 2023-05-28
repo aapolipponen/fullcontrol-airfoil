@@ -130,33 +130,44 @@ def lerp_points(p1, p2, t):
 def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, curved_trailing_edge, curved_leading_edge, move_leading_edge, move_trailing_edge):
     steps = []
 
-    # Precompute the interpolation values
-    chord_length_diff = chord_lengths[-1] - chord_lengths[0]
-
     for i in range(len(z_values) - 1):
         num_layers = int((z_values[i+1] - z_values[i]) / layer_height)
         current_z = z_values[i]  # Store the current z value
         
+        chord_length_diff = chord_lengths[i+1] - chord_lengths[i]
+
         for j in range(num_layers):
             z = current_z + j * layer_height
-    
-            # normalized height within current segment
-            t = j / num_layers
 
-            # Interpolate chord length
-            if curved_trailing_edge:
-                # Quadratic interpolation
-                chord_length = chord_lengths[i] + chord_length_diff * (t**2)
-            else:
-                # Linear interpolation
-                chord_length = chord_lengths[i] + chord_length_diff * t 
+            # Normalized height within current segment
+            t = j / num_layers
+            
+            # Linear interpolation
+            chord_length = chord_lengths[i] + chord_length_diff * t 
 
             airfoil = airfoil_wrapper([naca_nums[i]], num_points, [z], [chord_length], file_extraction, [filenames[i]])[0]
 
+            # Move airfoil based on chord lengths if edge is not static
+            if move_trailing_edge == False & move_leading_edge == False:
+                delta_x = (chord_lengths[i] - chord_length) / 2
+                for point in airfoil:
+                    point.x += delta_x
+            
+            if move_leading_edge:
+                delta_x = (chord_lengths[i] - chord_length)
+                for point in airfoil:
+                    point.x += delta_x
+                    
+            if move_leading_edge & move_leading_edge:
+                delta_x = (chord_lengths[i] - chord_length) / 2
+                for point in airfoil:
+                    point.x += delta_x
+
             layer = airfoil
 
+            min_x = min(point.x for point in airfoil)
+
             if generate_infill:
-                min_x = min(point.x for point in airfoil)
                 max_x = max(point.x for point in airfoil)
                 if infill_type == modified_triangle_wave_infill:
                     layer.extend(modified_triangle_wave_infill(layer, z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise))
@@ -165,7 +176,7 @@ def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, cho
                 layer.extend(create_circles(circle_centers, circle_radius, circle_offset, circle_num_points, circle_start_angle, circle_segment_angle, z))
         
             # After completing the layer, move to next layer.
-            steps.extend(fc.travel_to(fc.Point(x=0, y=0, z=z+layer_height)))
+            steps.extend(fc.travel_to(fc.Point(x=min_x, y=0, z=z+layer_height)))
             
             steps.extend(layer)
     
@@ -205,14 +216,14 @@ num_points = 128 # The resolution / accuracy of your airfoil.
 # File extraction (WARNING: BETA, May not work correctly.)
 # When using this the chord length works as a multiplier.
 file_extraction = False # If you want to extract data from a file. False If you want to use the 4-Digit NACA airfoil method for generating airfoils instead.
-filenames = ['clarky.dat', 'clarky.dat'] # If you want to extract the coordinates from a file.
+filenames = ['naca2412.dat', 'naca2412.dat'] # If you want to extract the coordinates from a file.
 
 # Wing parameters
-z_values = [0, 100]  # List of z-values for the airfoils
+z_values = [0, 40]  # List of z-values for the airfoils
 chord_lengths = [100, 75]  # Chord lengths of the airfoils
 
 # Infill
-generate_infill = False
+generate_infill = True
 infill_density = 8 # How dense the infill is.
 infill_reverse = False # Use if using file_extraction and starting point for airfoil is closer to or at the max x coordinate.
 infill_rise = False # Only for when using modified_triangle_infill. Raises the infill by layer_height/2 when coming back to min_x, to decrease the distance to hop to next layer.
@@ -232,8 +243,9 @@ circle_start_angle = 180 # Start angle for the circle.
 
 # Curvature
 
-curved_trailing_edge = False # Makes the trailing edge non-linearly interpolated
-# Simply makes the trailing edge have curvature instead of it being a straight line.
+# These variables need better names
+move_leading_edge = False # Makes the leading edge not static.
+move_trailing_edge = False # Makes the trailing edge not static.
 
 steps = loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, curved_trailing_edge, curved_leading_edge, move_leading_edge, move_trailing_edge)
 
@@ -245,18 +257,18 @@ offset_y = 100
 offset_z = 0 # If the nozzle is digging to the bed while printing the first layer and printers own z offset is adjusted correctly.
 # The 3D printers own z offset might not work using fullcontrol.
 
-steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
+#steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
 
 # Show the bed / build area size, with the cost of an extra travel move at the start of the gcode.
 # Works also without 3d printing
 
-calibration = calibration(bed_x_max = 300, bed_y_max = 300)
-steps = calibration+steps
+#calibration = calibration(bed_x_max = 300, bed_y_max = 300)
+#steps = calibration+steps
 
 # Move extruder up a set amount (Default = 25) after 3D print is done.
 
-steps.append(fc.Extruder(on=False))
-steps.append(fc.Point(z=+Z_hop))
+#steps.append(fc.Extruder(on=False))
+#steps.append(fc.Point(z=+Z_hop))
 
 fc.transform(steps, 'plot', fc.PlotControls(line_width = line_width*10, color_type='print_sequence'))
 
