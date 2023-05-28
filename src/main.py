@@ -1,8 +1,9 @@
+import time
+start = time.time()
 import numpy as np
 import fullcontrol as fc
 from infill_modified_triangle import modified_triangle_wave_infill
 from circle_utils import create_circles
-from scipy.optimize import curve_fit
 
 def calibration(bed_x_max, bed_y_max):
     calibration = []
@@ -124,7 +125,7 @@ def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, cho
                 min_x = min(point.x for point in airfoil)
                 max_x = max(point.x for point in airfoil)
                 if infill_type == modified_triangle_wave_infill:
-                    layer.extend(modified_triangle_wave_infill(steps, z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise))
+                    layer.extend(modified_triangle_wave_infill(layer, z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise))
             
             if generate_circle:
                 layer.extend(create_circles(circle_centers, circle_radius, circle_offset, circle_num_points, circle_start_angle, circle_segment_angle, z))
@@ -207,7 +208,7 @@ offset_y = 100
 offset_z = 0 # If the nozzle is digging to the bed while printing the first layer and printers own z offset is adjusted correctly.
 # The 3D printers own z offset might not work using fullcontrol.
 
-#steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
+steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
 
 # Show the bed / build area size, with the cost of an extra travel move at the start of the gcode.
 # Works also without 3d printing
@@ -222,3 +223,7 @@ fc.transform(steps, 'plot', fc.PlotControls(line_width = line_width*10, color_ty
 
 # Uncomment if you want to 3D print / generate GCODE.
 #fc.transform(steps, 'gcode', fc.GcodeControls(save_as='my_design', initialization_data=settings))
+
+end = time.time()
+
+print(end - start)
