@@ -127,7 +127,7 @@ def lerp_points(p1, p2, t):
     z = p1.z * (1 - t) + p2.z * t
     return fc.Point(x=x, y=y, z=z)
 
-def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, elliptical_wing, move_leading_edge, move_trailing_edge):
+def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, elliptical_wing, move_leading_edge, move_trailing_edge, ellipse_amount):
     steps = []
 
     for i in range(len(z_values) - 1):
@@ -145,7 +145,7 @@ def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, cho
             # Interpolate chord length
             if elliptical_wing:
                 # Quadratic interpolation
-                chord_length = chord_lengths[i] + chord_length_diff * (t**2)
+                chord_length = chord_lengths[i] + chord_length_diff * (t**2) * ellipse_amount
             else:
                 # Linear interpolation
                 chord_length = chord_lengths[i] + chord_length_diff * t 
@@ -257,10 +257,11 @@ circle_start_angle = 180 # Start angle for the circle.
 # These variables need better names
 move_leading_edge = True # Makes the leading edge not static.
 move_trailing_edge = True # Makes the trailing edge not static.
-
 elliptical_wing = True
 
-steps = loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, elliptical_wing, move_leading_edge, move_trailing_edge)
+ellipse_amount = 1
+
+steps = loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, elliptical_wing, move_leading_edge, move_trailing_edge, ellipse_amount)
 
 # Offset the generated airfoil.
 # If 3D printing make sure to double check this,
