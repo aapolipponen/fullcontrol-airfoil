@@ -1,10 +1,22 @@
 # Fullcontrol-Airfoil
 
-Fullcontrol airfoil is a Python script designed to generate 3D printed wings. It's a tool for hobbyists and makers to create custom gcode using [fullcontrol](https://github.com/FullControlXYZ/fullcontrol) for generating wings.
-
 ## Overview
 
-Fullcontrol airfoil is a Python script for generating NACA airfoils for 3D printable RC plane wings, offering a variety of customizations.
+Fullcontrol airfoil is a Python script designed to generate 3D printed wings. It's a tool for hobbyists and makers to create custom gcode using [fullcontrol](https://github.com/FullControlXYZ/fullcontrol) for generating wings.
+
+# Installation and Getting Started
+
+Dependencies:
+numpy
+fullcontrol
+
+To run the code after installing the dependencies, execute the command: `python3 src/main.py`
+
+To modify the parameters of the airfoil, edit the `main.py` file.
+
+## Usage Examples
+
+
 
 ## Todo
 
