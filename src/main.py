@@ -189,6 +189,74 @@ def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_values, cho
     
     return steps
 
+def rotate_point(point, angle):
+    """ Rotate a point counter-clockwise by a given angle around the origin (0,0).
+    """
+    angle = np.radians(angle)  # convert degrees to radians
+    px, py = point.x, point.y
+    qx = np.cos(angle)*px - np.sin(angle)*py
+    qy = np.sin(angle)*px + np.cos(angle)*py
+    return fc.Point(x=qx, y=qy, z=0)
+
+def fill_shape_with_lines(points, angle=45):
+    # Store new points
+    new_points = []
+
+    # Rotate points by given angle
+    rotated_points = [rotate_point(p, angle) if isinstance(p, fc.Point) else p for p in points]
+    
+    # Get the min and max y values of the rotated shape
+    min_y = min(point.y for point in rotated_points if isinstance(point, fc.Point))
+    max_y = max(point.y for point in rotated_points if isinstance(point, fc.Point))
+
+    # Define the step size for the y values. Here we use 1.0, but it could be any positive number
+    step_size = 1.0
+
+    # For each y value between min_y and max_y with a step size of step_size
+    for y in np.arange(min_y, max_y + step_size, step_size):
+        intersections = []
+
+        # Check each line segment in the polygon for intersection with this y value
+        for i in range(len(rotated_points)):
+            p1 = rotated_points[i]
+            if not isinstance(p1, fc.Point):
+                continue
+            p2 = rotated_points[(i+1)%len(rotated_points)]
+            if not isinstance(p2, fc.Point):
+                continue
+
+            # If this line segment intersects with this y value
+            if min(p1.y, p2.y) < y <= max(p1.y, p2.y):
+                # Compute the x-coordinate of the intersection point
+                x = p1.x + (p2.x - p1.x) * (y - p1.y) / (p2.y - p1.y)
+                intersections.append(x)
+
+        # Sort the intersections to pair them up
+        intersections.sort()
+
+        # Generate the lines from these intersection points
+        for i in range(0, len(intersections) - 1, 2):
+            if i+1 < len(intersections):
+                line_start = rotate_point(fc.Point(x=intersections[i], y=y, z=0), -angle)
+                line_end = rotate_point(fc.Point(x=intersections[i+1], y=y, z=0), -angle)
+
+                # Add the start and end points of the line to the new_points list
+                if isinstance(line_start, fc.Point):
+                    new_points.extend(fc.travel_to(line_start))  # use extend instead of append
+                else:
+                    new_points.append(line_start)
+
+                if isinstance(line_end, fc.Point):
+                    new_points.append(line_end)
+                else:
+                    new_points.append(line_end)
+
+    # Ensure the first point in new_points is a fc.Point instance before calling fc.travel_to
+    if isinstance(new_points[0], fc.Point):
+        new_points.extend(fc.travel_to(new_points[0]))
+
+    return new_points  # return the new
+
 # SETTINGS
 
 # Airfoil Parameters
@@ -196,15 +264,15 @@ naca_nums = ['2412', '2412'] # NACA airfoil numbers (for NACA airfoil method)
 num_points = 128 # Resolution of airfoil - higher values give better quality but slower performance and larger file size for gcode
 
 # Wing Parameters
-z_positions = [0, 40]  # Z-coordinates for each airfoil section
-chord_lengths = [100, 75]  # Chord length for each airfoil section
+z_positions = [0, 0.3]  # Z-coordinates for each airfoil section
+chord_lengths = [100, 100]  # Chord length for each airfoil section
 
 # File Extraction Parameters (Beta)
 file_extraction = False # Enable to use file extraction, disable for NACA airfoil method
 filenames = ['naca2412.dat', 'naca2412.dat'] # File names for file extraction method. These have to be in the profiles folder.
 
 # Infill Parameters
-generate_infill = True
+generate_infill = False
 
 infill_density = 8 # Density of infill (higher values = denser infill)
 infill_reverse = False # Enable to reverse infill direction
@@ -225,7 +293,7 @@ circle_segment_angle = 45 # Angle covered by each pass when drawing circle
 circle_start_angle = 180 # Starting angle for circle
 
 # Wing Curvature Parameters
-angled_leading_edge = True # Allows movement for the leading edge
+angled_leading_edge = False # Allows movement for the leading edge
 angled_trailing_edge = True # Allows movement for the trailing edge
 
 elliptical_wing = False
@@ -267,19 +335,21 @@ printer_settings = {
 
 steps = loft_shapes(naca_nums, num_points, file_extraction, filenames, z_positions, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, elliptical_wing, angled_leading_edge, angled_trailing_edge, ellipse_amount)
 
-steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
+steps = fill_shape_with_lines(steps)
 
-calibration = calibration(bed_x_max, bed_y_max)
-steps = calibration+steps
-
-steps.append(fc.Extruder(on=False))
-steps.append(fc.Point(z=+Z_hop))
+#steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
+#
+#calibration = calibration(bed_x_max, bed_y_max)
+#steps = calibration+steps
+#
+#steps.append(fc.Extruder(on=False))
+#steps.append(fc.Point(z=+Z_hop))
 
 fc.transform(steps, 'plot', fc.PlotControls(line_width = line_width*10, color_type='print_sequence'))
 
-if gcode_generation:
-    fc.transform(steps, 'gcode', fc.GcodeControls(save_as=gcode_name, initialization_data=printer_settings))
-
-end = time.time()
-time_to_generate = end-start
-print('Generated in: '+str(round(time_to_generate, 5))+' s')
+#if gcode_generation:
+#    fc.transform(steps, 'gcode', fc.GcodeControls(save_as=gcode_name, initialization_data=printer_settings))
+#
+#end = time.time()
+#time_to_generate = end-start
+#print('Generated in: '+str(round(time_to_generate, 5))+' s')
