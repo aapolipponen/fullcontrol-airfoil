@@ -193,8 +193,8 @@ def loft_shapes():
 # Global Variables
 
 # Airfoil Parameters
-naca_nums = ['2412', '2412'] # NACA airfoil numbers (for NACA airfoil method)
-num_points = 12 # Resolution of airfoil - higher values give better quality but slower performance and larger file size for gcode
+naca_nums = ['0012', '0012'] # NACA airfoil numbers (for NACA airfoil method)
+num_points = 128 # Resolution of airfoil - higher values give better quality but slower performance and larger file size for gcode
 
 # Wing Parameters
 z_positions = [0, 100]  # Z-coordinates for each airfoil section
@@ -220,7 +220,7 @@ infill_type = modified_triangle_wave_infill # Infill pattern type
 # Fully filled layer
 filled_layers_enabled = True
 fill_angle = 45
-filled_layers = [0, 0.3, 0.6]
+filled_layers = [0, 0.3, 0.6, 24.6, 24.9, 25.2, 49.8, 50.1, 50.4]
 
 # Circle Generation Parameters
 generate_circle = True
@@ -277,6 +277,7 @@ printer_settings = {
 # Debug Setting
 print_total_layers = True
 print_rendering_plot = True
+print_rendering_plot_done = True
 print_generating_gcode = True
 print_time_taken = True
 print_generation_done = True
@@ -303,12 +304,12 @@ if gcode_generation:
 
 if print_rendering_plot:
     print("Rendering plot")
-fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', style="tube"))
+fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', style="tube", neat_for_publishing = True, zoom = 0.8, hide_travel=True))
 
-if print_generation_done:
-    print("Wing generation done")
+if print_rendering_plot_done:
+    print("Rendering done")
 
 if print_time_taken:
     end = time.time()
     time_to_generate = end-start
-    print('Generated wing in: '+str(round(time_to_generate, 4))+' s')
+    print('Generated in: '+str(round(time_to_generate, 4))+' s')
