@@ -14,7 +14,7 @@ def calibration(bed_x_max, bed_y_max):
     calibration.append(fc.Extruder(on=True))
     return calibration
 
-def naca_airfoil(naca_num, num_points, chord_length):
+def naca_airfoil(naca_num, chord_length, z):
     naca_length = len(naca_num)
     if naca_length != 4:
         raise ValueError("Invalid NACA number. Must be 4 digits long.")
@@ -33,44 +33,10 @@ def naca_airfoil(naca_num, num_points, chord_length):
     yu *= chord_length
     xl *= chord_length
     yl *= chord_length
-    steps_upper = [fc.Point(x=xu[i], y=yu[i], z=0) for i in range(num_points)]
-    steps_lower = [fc.Point(x=xl[i], y=yl[i], z=0) for i in range(num_points - 1, -1, -1)]
+    steps_upper = [fc.Point(x=xu[i], y=yu[i], z=z) for i in range(num_points)]
+    steps_lower = [fc.Point(x=xl[i], y=yl[i], z=z) for i in range(num_points - 1, -1, -1)]
     steps = steps_upper + steps_lower
     return steps
-
-def airfoil_extract(chord_length, filename, interpolate=True, remove_y0=True, sort_point_order=True, reverse_points_sorting=True):
-    airfoil = []
-    with open("profiles/" + filename, 'r') as file:
-        lines = file.readlines()
-    for line in lines[1:]:
-        x, y = map(float, line.split())
-        airfoil.append(fc.Point(x=x * chord_length, y=y * chord_length, z=0))
-    if interpolate:
-        airfoil = optimize_airfoil(airfoil)
-    if remove_y0:
-        airfoil = (point for point in airfoil if point.y != 0)
-    if sort_point_order:
-        airfoil = sort_points(airfoil, reverse_points_sorting)
-    return airfoil
-
-def optimize_airfoil(airfoil, multiplier=5):
-    fill = []
-    for i in range(len(airfoil) - 1):
-        point1 = airfoil[i]
-        point2 = airfoil[i + 1]
-
-        avg_values = [(val1 + val2) / 2 for val1, val2 in zip((point1.x, point1.y, point1.z), (point2.x, point2.y, point2.z))]
-        new_point = fc.Point(x=avg_values[0], y=avg_values[1], z=avg_values[2])
-
-        fill.append(point1)
-        fill.extend([new_point]*multiplier)
-
-    fill.append(airfoil[-1])
-    return fill
-
-def remove_points_y0(airfoil):
-    airfoil = [point for point in airfoil if point.y != 0]
-    return airfoil
 
 def sort_points(points, reverse_order):
     points_over_y0 = []
@@ -84,42 +50,20 @@ def sort_points(points, reverse_order):
 
     return points_over_y0 + points_under_y0
 
-def airfoil_wrapper(naca_nums, num_points, z_positions, chord_lengths, naca_airfoil_generation, filenames):
-    
-    airfoils = []
-    
-    def airfoil_extract(chord_length, filename, interpolate=True, remove_y0=True, sort_point_order=True, reverse_points_sorting=False):
-        airfoil = []
-        with open("profiles/"+filename, 'r') as file:
-            lines = file.readlines()
-        # Skip the first line as it's a header
-        for line in lines[1:]:
-            x, y = map(float, line.split())
-            airfoil.append(fc.Point(x=x*chord_length, y=y*chord_length, z=0))
-        if interpolate:
-            airfoil = optimize_airfoil(airfoil)
-        if remove_y0:
-            airfoil = remove_points_y0(airfoil)
-        if sort_point_order:
-            airfoil = sort_points(airfoil, reverse_points_sorting)
-        steps = airfoil
-        return steps
-    
-    def process_airfoil(airfoil, z_value):
-        return [fc.Point(x=point.x, y=point.y, z=z_value) for point in airfoil]
-    
-    if naca_airfoil_generation:
-        for z_value, chord_length, filename in zip(z_positions, chord_lengths, filenames):
-            airfoil = airfoil_extract(chord_length, filename)
-            airfoil = process_airfoil(airfoil, z_value)
-            airfoils.append(airfoil)
-    else:
-        for naca_num, z_value, chord_length in zip(naca_nums, z_positions, chord_lengths):
-            airfoil = naca_airfoil(naca_num, num_points, chord_length)
-            airfoil = process_airfoil(airfoil, z_value)
-            airfoils.append(airfoil)
+def airfoil_extract(filename, chord_length, z, remove_y0=False, sort_point_order=False, reverse_points_sorting=False):
+    airfoil = []
+    with open("profiles/" + filename, 'r') as file:
+        lines = file.readlines()
+    for line in lines[1:]:
+        x, y = map(float, line.split())
+        airfoil.append(fc.Point(x=x * chord_length, y=y * chord_length, z=z))
 
-    return airfoils
+    if remove_y0:
+        airfoil = (point for point in airfoil if point.y != 0)
+    if sort_point_order:
+        airfoil = sort_points(airfoil, reverse_points_sorting)
+    
+    return airfoil
 
 def lerp_points(p1, p2, t):
     x = p1.x * (1 - t) + p2.x * t
@@ -130,7 +74,6 @@ def lerp_points(p1, p2, t):
 def loft_shapes():    
     assert len(naca_nums) == len(z_positions) == len(chord_lengths) == len(filenames), "Input lists must have the same length. There is a bug in the code or you have inputted different length lists."
 
-    
     steps = []
     total_layers = sum(int((z_positions[i+1] - z_positions[i]) / layer_height) for i in range(len(z_positions) - 1))
     if print_total_layers:
@@ -150,13 +93,17 @@ def loft_shapes():
                        
             # Interpolate chord length
             if curved_wing:
-                chord_length = chord_lengths[i] + chord_length_diff * np.sqrt(1 + t**2)           
+                # Quadratic interpolation
+                chord_length = chord_lengths[i] + chord_length_diff * (t**2) * curve_amount
             else:
                 # Linear interpolation
                 chord_length = chord_lengths[i] + chord_length_diff * t 
-
-            airfoil = airfoil_wrapper([naca_nums[i]], num_points, [z], [chord_length], file_extraction, [filenames[i]])[0]
-
+                
+            if airfoil_extract:
+                airfoil = airfoil_extract(filenames[i], chord_length, z)
+            else:
+                airfoil = naca_airfoil(naca_nums[i], chord_length, z)                
+            
             # Move airfoil based on chord lengths if edge is not set as straight
             # Calculating these in a different way leads to a weird bug where the infill spills out.
             # For now this method works.
@@ -167,15 +114,17 @@ def loft_shapes():
                         point.x += delta_x
                 else:
                     pass
+                
             elif move_leading_edge:
                 delta_x = (chord_lengths[i] - chord_length)
                 for point in airfoil:
                     point.x += delta_x
+
             else:
                 delta_x = (chord_lengths[i] - chord_length) / 2
                 for point in airfoil:
                     point.x += delta_x
-
+                      
             layer = airfoil
 
             min_x = min(point.x for point in airfoil)
@@ -189,7 +138,7 @@ def loft_shapes():
                 layer.extend(create_circles(circle_centers, circle_radius, circle_offset, circle_num_points, circle_start_angle, circle_segment_angle, z))
 
             # Check if this z-value should be a fully filled layer
-            if z in filled_layers:
+            if filled_layers_enabled and z in filled_layers:
                 layer.extend(fill_shape(airfoil, line_width, fill_angle, z))
 
             # After completing the layer, move to next layer.
@@ -207,21 +156,22 @@ naca_nums = ['2412', '2412'] # NACA airfoil numbers (for NACA airfoil method)
 num_points = 128 # Resolution of airfoil - higher values give better quality but slower performance and larger file size for gcode
 
 # Wing Parameters
-z_positions = [0, 100]  # Z-coordinates for each airfoil section
-chord_lengths = [100, 75]  # Chord length for each airfoil section
+z_positions = [0, 40]  # Z-coordinates for each airfoil section
+chord_lengths = [1, 0.75]  # Chord length (mm) for each airfoil. May be different scale for extracted airfoils.
 
 # File Extraction Parameters (Beta)
 file_extraction = False # Enable to use file extraction, disable for NACA airfoil method
-filenames = ['mh60.dat', 'mh60.dat'] # File names for file extraction method. These have to be in the profiles folder.
+filenames = ['naca2412.dat', 'naca2412.dat'] # File names for file extraction method. These have to be in the profiles folder.
 
 # Infill Parameters
 generate_infill = True
 infill_density = 6 # Density of infill (higher values = denser infill)
-infill_reverse = False # Enable to reverse infill direction
-infill_rise = True # Enable to raise infill by half layer height when returning to start point of infill. Makes the hop from layer to layer smaller.
+infill_reverse = True # Enable to reverse infill direction. Used if file_extraction makes the airfoil start at max x instead of min x.
+infill_rise = False # Enable to raise infill by half layer height when returning to start point of infill. Makes the hop from layer to layer smaller.
 infill_type = modified_triangle_wave_infill # Infill pattern type
 
 # Fully filled airfoil
+filled_layers_enabled = False
 fill_angle = 45
 filled_layers = [0, 0.3, 0.6]
 
@@ -240,9 +190,13 @@ circle_start_angle = 180 # Starting angle for circle. Started on the outer circl
 move_leading_edge = True # Allows movement for the leading edge. If true the edge moves if an chord_length upper in z is smaller.
 move_trailing_edge = True # Allows movement for the trailing edge. If true the edge moves if an chord_length upper in z is smaller.
 
-curved_wing = True
-curve_type = 'Elliptical' # Options are 'quadratic' and 'elliptical'
+curved_wing = False
 curve_amount = 1 # Ellipse curvature amount (1 = fully curved, 0 = not curved)
+
+# Layer height and width settings
+
+layer_height = 0.3
+line_width = 0.4
 
 # Offset
 offset_wing = False
@@ -258,18 +212,10 @@ bed_y_max = 300
 # Post-Print Settings
 z_hop_enabled = False # Makes z move up a set amount after print is done
 z_hop_amount = 50 # Height to move extruder up after printing
-continuous_wing = True # If enabled ignores the z_positions and chord_lengths between the first and the last values. Kind of a hacky toggle, but it can save time if you don't want to remove values from the lists.
-
-curved_wing = True
-ellipse_curvature = 1
 
 # 3D Printing Configuration
-# If you want to 3D print instead of just plotting
-gcode_generation = False
+gcode_generation = False # Enable gcode generation.
 gcode_name = 'gcode_output' # Output filename for G-code
-
-layer_height = 0.3
-line_width = 0.4
 
 # Printer Specific Settings
 printer_settings = {
@@ -283,6 +229,8 @@ printer_settings = {
 
 # Debug Setting
 print_total_layers = True
+print_rendering_plot = True
+print_generating_gcode = True
 print_time_taken = True
 
 # SETTINGS END
@@ -300,12 +248,14 @@ if z_hop_enabled:
     steps.append(fc.Extruder(on=False))
     steps.append(fc.Point(z=+z_hop_amount))
 
-print("Rendering plot")
-fc.transform(steps, 'plot', fc.PlotControls(line_width = line_width*10, color_type='print_sequence', style='tube'))
-
 if gcode_generation:
-    print("Generating gcode")
+    if print_generating_gcode:
+        print("Generating gcode")
     fc.transform(steps, 'gcode', fc.GcodeControls(save_as=gcode_name, initialization_data=printer_settings))
+
+if print_rendering_plot:
+    print("Rendering plot")
+fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', style="tube"))
 
 if print_time_taken:
     end = time.time()
