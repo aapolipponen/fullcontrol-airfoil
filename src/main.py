@@ -38,7 +38,7 @@ def naca_airfoil(naca_num, num_points, chord_length):
     steps = steps_upper + steps_lower
     return steps
 
-def airfoil_extract(chord_length, filename, interpolate=True, remove_y0=False, sort_point_order=True, reverse_points_sorting=False):
+def airfoil_extract(chord_length, filename):
     airfoil = []
     with open("profiles/" + filename, 'r') as file:
         lines = file.readlines()
@@ -47,13 +47,11 @@ def airfoil_extract(chord_length, filename, interpolate=True, remove_y0=False, s
         airfoil.append(fc.Point(x=x * chord_length, y=y * chord_length, z=0))
     if interpolate:
         airfoil = optimize_airfoil(airfoil)
-    if remove_y0:
-        airfoil = (point for point in airfoil if point.y != 0)
     if sort_point_order:
         airfoil = sort_points(airfoil, reverse_points_sorting)
     return airfoil
 
-def optimize_airfoil(airfoil, multiplier=2):
+def optimize_airfoil(airfoil):
     new_points = []
     for i in range(len(airfoil) - 1):
         point1 = airfoil[i]
@@ -63,7 +61,7 @@ def optimize_airfoil(airfoil, multiplier=2):
         new_point = fc.Point(x=avg_values[0], y=avg_values[1], z=avg_values[2])
 
         new_points.append(point1)
-        new_points.extend([new_point]*multiplier)
+        new_points.extend([new_point]*interpolate_airfoil_multiplier)
 
     new_points.append(airfoil[-1])
     return new_points
@@ -140,7 +138,7 @@ def loft_shapes():
                 chord_length = chord_lengths[i] + chord_length_diff * t 
                 
             airfoil = airfoil_wrapper([naca_nums[i]], num_points, [z], [chord_length], file_extraction, [filenames[i]])[0]
-                                               
+                                                           
             # Move airfoil based on chord lengths if edge is not set as straight
             # Calculating these in a different way leads to a weird bug where the infill spills out.
             # For now this method works.
@@ -169,9 +167,17 @@ def loft_shapes():
                 if infill_type == modified_triangle_wave_infill:
                     layer.extend(modified_triangle_wave_infill(layer, z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise))            
             
-            if generate_circle:
+            if generate_circle and not z in filled_layers:
                 layer.extend(create_circles(circle_centers, circle_radius, circle_offset, circle_num_points, circle_start_angle, circle_segment_angle, z))
 
+            # Validate z to ensure it's a multiple of layer_height, if not round to the nearest multiple. Used for the fill_layer
+            remainder = z % layer_height
+            if remainder != 0:
+                if remainder >= layer_height / 2:
+                    z += layer_height - remainder
+                else:
+                    z -= remainder
+                    
             # Check if this z-value should be a fully filled layer
             if filled_layers_enabled and z in filled_layers:
                 layer.extend(fill_shape(airfoil, line_width, fill_angle, z))
@@ -188,15 +194,21 @@ def loft_shapes():
 
 # Airfoil Parameters
 naca_nums = ['2412', '2412'] # NACA airfoil numbers (for NACA airfoil method)
-num_points = 128 # Resolution of airfoil - higher values give better quality but slower performance and larger file size for gcode
+num_points = 12 # Resolution of airfoil - higher values give better quality but slower performance and larger file size for gcode
 
 # Wing Parameters
 z_positions = [0, 100]  # Z-coordinates for each airfoil section
-chord_lengths = [1.00, 0.75]  # Chord length (mm) for each airfoil. May be different scale for extracted airfoils.
+chord_lengths = [100, 75]  # Chord length (mm) for each airfoil. May be different scale for extracted airfoils.
 
-# File Extraction Parameters (Beta)
-file_extraction = True # Enable to use file extraction, disable for NACA airfoil method
+# File Extraction Parameters
+file_extraction = False # Enable to use file extraction, disable for NACA airfoil method
 filenames = ['naca2412.dat', 'naca2412.dat'] # File names for file extraction method. These have to be in the profiles folder.
+
+interpolate=False # Enable if you want to multiply the amount of points the imported airfoil has
+interpolate_airfoil_multiplier = 2 # Multiplier for how many times to multiply the amount of points
+
+sort_point_order=True # Sorts the points of the airfoil to start and end at min_X or x=0 depending if you have move_leading_edge enabled or not.
+reverse_points_sorting=False # Reverse the direction that sort point order sorts the points to start and end at. If enabled makes the points start and end at max_x or x=chord_length.
 
 # Infill Parameters
 generate_infill = True
@@ -205,15 +217,15 @@ infill_reverse = False # Enable to reverse infill direction. Used if file_extrac
 infill_rise = False # Enable to raise infill by half layer height when returning to start point of infill. Makes the hop from layer to layer smaller.
 infill_type = modified_triangle_wave_infill # Infill pattern type
 
-# Fully filled airfoil
+# Fully filled layer
 filled_layers_enabled = True
 fill_angle = 45
 filled_layers = [0, 0.3, 0.6]
 
 # Circle Generation Parameters
-generate_circle = False
+generate_circle = True
 circle_centers = [ # Center points for start and end of circle
-    {"start_center": fc.Point(x=37.763, y=1.25, z=min(z_positions)), "end_center": fc.Point(x=32.945, y=1.25, z=40)},
+    {"start_center": fc.Point(x=43.8, y=1.35, z=min(z_positions)), "end_center": fc.Point(x=43.8, y=1.35, z=max(z_positions))},
 ]
 circle_radius = 4 # Radius of circle
 circle_num_points = 24 # Number of points in circle
@@ -221,11 +233,11 @@ circle_offset = 0.75 # Offset for second circle
 circle_segment_angle = 45 # Angle covered by each pass when drawing circle
 circle_start_angle = 180 # Starting angle for circle. Started on the outer circle.
 
-# Wing Curvature Parameters
+# Wing Curvature Settings
 move_leading_edge = True # Allows movement for the leading edge. If true the edge moves if an chord_length upper in z is smaller.
 move_trailing_edge = True # Allows movement for the trailing edge. If true the edge moves if an chord_length upper in z is smaller.
 
-curved_wing = False
+curved_wing = False # Right now uses quadratic interpolation. More options coming soon.
 curve_amount = 1 # Ellipse curvature amount (1 = fully curved, 0 = not curved)
 
 # Layer height and width settings
@@ -257,7 +269,7 @@ printer_settings = {
     "extrusion_width": line_width, # Width of extrusion in mm
     "extrusion_height": layer_height, # Height of extrusion in mm
     "print_speed": 2000, # Print speed (acceleration)
-    "travel_speed": 4000, # Travel speed (acceleration)
+    "travel_speed": 2000, # Travel speed (acceleration)
     "nozzle_temp": 210, # Nozzle temperature in degrees Celsius
     "bed_temp": 60, # Bed temperature in degrees Celsius
 }
