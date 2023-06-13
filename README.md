@@ -7,16 +7,18 @@ Fullcontrol airfoil is a Python script designed to generate 3D printed wings. It
 # Installation and Getting Started
 
 Dependencies:
-numpy
-fullcontrol
+numpy and [fullcontrol](https://github.com/FullControlXYZ/fullcontrol)
 
-To run the code after installing the dependencies, execute the command: `python3 src/main.py`
+To install the depencies, run the commands:
+
+pip install numpy
+pip install git+https://github.com/FullControlXYZ/fullcontrol
+
+Run the code after installing the dependencies, using the command: `python3 src/main.py`
 
 To modify the parameters of the airfoil, edit the `main.py` file.
 
 ## Usage Examples
-
-
 
 ## Todo
 
@@ -30,6 +32,36 @@ To modify the parameters of the airfoil, edit the `main.py` file.
 - [ ] [Add more airfoil generation options](https://en.m.wikipedia.org/wiki/NACA_airfoil)
 - [ ] GUI?
 - [ ] Mesh generation?
+
+## Parameters
+
+#### Airfoil Parameters
+
+`naca_nums`: NACA airfoil numbers for the NACA airfoil method. `Default:` `['2412', '2412']`.  
+`num_points`: Resolution of airfoil. Higher values give better quality but slower performance and larger file size for gcode. `Default:` `128`.
+
+#### Wing Parameters
+
+`z_positions`: Z-coordinates for each airfoil section. `Default:` `[0, 40]`.  
+`chord_lengths`: Chord length for each airfoil section. `Default:` `[100, 75]`.
+
+#### File Extraction Parameters
+`file_extraction`: Enable to use file extraction, disable for NACA airfoil generation method. `Default:` `False`.  
+`filenames`: File names for file extraction method. These have to be in the profiles folder. `Default:` `['naca2412.dat', 'naca2412.dat']`.
+
+#### Infill Parameters
+`generate_infill`: Enable to generate infill. `Default:` `True`.  
+`infill_density`: Density of infill. Higher values result in denser infill. `Default:` `6`.  
+`infill_reverse`: Enable to reverse infill direction. `Default:` `False`.  
+`infill_rise`: Enable to raise infill by half layer height when returning to the start point of infill. `Default:` `False`.  
+`infill_type`: Infill pattern type. Only option is `modified_triangle_wave_infill`.
+
+## Known Issues and Limitations
+
+1. The script execution may be slow.
+2. Only one infill option: `modified_triangle_wave_infill`. There's an [issue](https://github.com/aapolipponen/fullcontrol-airfoil/issues/9) for this.
+3. Elliptical wings can only be elliptical from both sides or not at all.
+4. Elliptical wing's curvature amount can only be changed for both of the edges.
 
 ## Contributions
 
