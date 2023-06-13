@@ -11,8 +11,9 @@ numpy and [fullcontrol](https://github.com/FullControlXYZ/fullcontrol)
 
 To install the depencies, run the commands:
 
-pip install numpy
-pip install git+https://github.com/FullControlXYZ/fullcontrol
+> pip install numpy
+> 
+>pip install git+https://github.com/FullControlXYZ/fullcontrol
 
 Run the code after installing the dependencies, using the command: `python3 src/main.py`
 
@@ -42,7 +43,7 @@ To modify the parameters of the airfoil, edit the `main.py` file.
 
 #### Wing Parameters
 
-`z_positions`: Z-coordinates for each airfoil section. `Default:` `[0, 40]`.  
+`z_positions`: Z-coordinates for each airfoil section. `Default:` `[0, 100]`.  
 `chord_lengths`: Chord length for each airfoil section. `Default:` `[100, 75]`.
 
 #### File Extraction Parameters
@@ -60,8 +61,8 @@ To modify the parameters of the airfoil, edit the `main.py` file.
 
 1. The script execution may be slow.
 2. Only one infill option: `modified_triangle_wave_infill`. There's an [issue](https://github.com/aapolipponen/fullcontrol-airfoil/issues/9) for this.
-3. Elliptical wings can only be elliptical from both sides or not at all.
-4. Elliptical wing's curvature amount can only be changed for both of the edges.
+3. Curved wings are curved from all edges that are set as movable.
+4. A curved wing's curvature amount can only be changed for both of the edges.
 
 ## Contributions
 

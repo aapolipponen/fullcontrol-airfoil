@@ -1,6 +1,4 @@
 import fullcontrol as fc
-import math
-import numpy as np
 
 def find_closest(point, point_list, condition):
     min_distance = float('inf')
