@@ -218,7 +218,7 @@ filenames = ['mh60.dat', 'mh60.dat'] # File names for file extraction method. Th
 generate_infill = True
 infill_density = 6 # Density of infill (higher values = denser infill)
 infill_reverse = False # Enable to reverse infill direction
-infill_rise = False # Enable to raise infill by half layer height when returning to start point of infill
+infill_rise = True # Enable to raise infill by half layer height when returning to start point of infill. Makes the hop from layer to layer smaller.
 infill_type = modified_triangle_wave_infill # Infill pattern type
 
 # Fully filled airfoil
@@ -244,7 +244,7 @@ curved_wing = True
 curve_type = 'Elliptical' # Options are 'quadratic' and 'elliptical'
 curve_amount = 1 # Ellipse curvature amount (1 = fully curved, 0 = not curved)
 
-# Offset wing
+# Offset
 offset_wing = False
 offset_x = 50 # Offset in mm (x-axis)
 offset_y = 100 # Offset in mm (y-axis)
@@ -301,7 +301,7 @@ if z_hop_enabled:
     steps.append(fc.Point(z=+z_hop_amount))
 
 print("Rendering plot")
-fc.transform(steps, 'plot', fc.PlotControls(line_width = line_width*10, color_type='print_sequence'))
+fc.transform(steps, 'plot', fc.PlotControls(line_width = line_width*10, color_type='print_sequence', style='tube'))
 
 if gcode_generation:
     print("Generating gcode")
