@@ -127,20 +127,20 @@ def lerp_points(p1, p2, t):
     z = p1.z * (1 - t) + p2.z * t
     return fc.Point(x=x, y=y, z=z)
 
-def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_positions, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, angled_leading_edge, angled_trailing_edge, curved_wing, continuous_wing):
+def loft_shapes():    
+    assert len(naca_nums) == len(z_positions) == len(chord_lengths) == len(filenames), "Input lists must have the same length. There is a bug in the code or you have inputted different length lists."
+
+    
     steps = []
-
     total_layers = sum(int((z_positions[i+1] - z_positions[i]) / layer_height) for i in range(len(z_positions) - 1))
-
-    print("Total layers: "+str(total_layers))
-
-    layer_counter = 0
+    if print_total_layers:
+        print(f"Total layers: {total_layers}")
 
     for i in range(len(z_positions) - 1):
         num_layers = int((z_positions[i+1] - z_positions[i]) / layer_height)
         current_z = z_positions[i]
         
-        chord_length_diff = chord_lengths[i+1] - chord_lengths[i] if not continuous_wing else chord_lengths[-1] - chord_lengths[0]
+        chord_length_diff = chord_lengths[i+1] - chord_lengths[i]
 
         for j in range(num_layers):
             z = current_z + j * layer_height
@@ -150,15 +150,34 @@ def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_positions, 
                        
             # Interpolate chord length
             if curved_wing:
-                chord_length = chord_lengths[i] + chord_length_diff * np.sqrt(1 + t**2) if not continuous_wing else chord_lengths[0] + chord_length_diff * np.sqrt(1 + t**2)            
+                chord_length = chord_lengths[i] + chord_length_diff * np.sqrt(1 + t**2)           
             else:
                 # Linear interpolation
-                chord_length = chord_lengths[i] + chord_length_diff * t if not continuous_wing else chord_lengths[0] + chord_length_diff * t
+                chord_length = chord_lengths[i] + chord_length_diff * t 
 
             airfoil = airfoil_wrapper([naca_nums[i]], num_points, [z], [chord_length], file_extraction, [filenames[i]])[0]
 
+            # Move airfoil based on chord lengths if edge is not set as straight
+            # Calculating these in a different way leads to a weird bug where the infill spills out.
+            # For now this method works.
+            if move_trailing_edge:
+                if move_leading_edge:
+                    delta_x = (chord_lengths[i] - chord_length) / 2
+                    for point in airfoil:
+                        point.x += delta_x
+                else:
+                    pass
+            elif move_leading_edge:
+                delta_x = (chord_lengths[i] - chord_length)
+                for point in airfoil:
+                    point.x += delta_x
+            else:
+                delta_x = (chord_lengths[i] - chord_length) / 2
+                for point in airfoil:
+                    point.x += delta_x
+
             layer = airfoil
-            
+
             min_x = min(point.x for point in airfoil)
 
             if generate_infill and not z in filled_layers:
@@ -169,9 +188,8 @@ def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_positions, 
             if generate_circle:
                 layer.extend(create_circles(circle_centers, circle_radius, circle_offset, circle_num_points, circle_start_angle, circle_segment_angle, z))
 
-            # Check if this z-value should be filled
+            # Check if this z-value should be a fully filled layer
             if z in filled_layers:
-                # Perform your filling operation here
                 layer.extend(fill_shape(airfoil, line_width, fill_angle, z))
 
             # After completing the layer, move to next layer.
@@ -182,6 +200,7 @@ def loft_shapes(naca_nums, num_points, file_extraction, filenames, z_positions, 
     return steps
 
 # SETTINGS
+# Global Variables
 
 # Airfoil Parameters
 naca_nums = ['2412', '2412'] # NACA airfoil numbers (for NACA airfoil method)
@@ -218,8 +237,8 @@ circle_segment_angle = 45 # Angle covered by each pass when drawing circle
 circle_start_angle = 180 # Starting angle for circle. Started on the outer circle.
 
 # Wing Curvature Parameters
-angled_leading_edge = True # Allows movement for the leading edge. If true the edge moves if an chord_length upper in z is smaller.
-angled_trailing_edge = True # Allows movement for the trailing edge. If true the edge moves if an chord_length upper in z is smaller.
+move_leading_edge = True # Allows movement for the leading edge. If true the edge moves if an chord_length upper in z is smaller.
+move_trailing_edge = True # Allows movement for the trailing edge. If true the edge moves if an chord_length upper in z is smaller.
 
 curved_wing = True
 curve_type = 'Elliptical' # Options are 'quadratic' and 'elliptical'
@@ -262,9 +281,13 @@ printer_settings = {
     "bed_temp": 60, # Bed temperature in degrees Celsius
 }
 
+# Debug Setting
+print_total_layers = True
+print_time_taken = True
+
 # SETTINGS END
 
-steps = loft_shapes(naca_nums, num_points, file_extraction, filenames, z_positions, chord_lengths, layer_height, infill_density, generate_infill, generate_circle, circle_centers, circle_radius, circle_num_points, infill_type, infill_reverse, infill_rise, circle_offset, circle_segment_angle, circle_start_angle, angled_leading_edge, angled_trailing_edge, curve_amount, fill_angle, filled_layers, curved_wing)
+steps = loft_shapes()
 
 if offset_wing:
     steps = fc.move(steps, fc.Vector(x=offset_x, y=offset_y, z=offset_z))
@@ -284,6 +307,7 @@ if gcode_generation:
     print("Generating gcode")
     fc.transform(steps, 'gcode', fc.GcodeControls(save_as=gcode_name, initialization_data=printer_settings))
 
-end = time.time()
-time_to_generate = end-start
-print('Generated wing in: '+str(round(time_to_generate, 4))+' s')
+if print_time_taken:
+    end = time.time()
+    time_to_generate = end-start
+    print('Generated wing in: '+str(round(time_to_generate, 4))+' s')
