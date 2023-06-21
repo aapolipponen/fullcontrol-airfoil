@@ -74,8 +74,6 @@ Here are some bugs and possible enhancements that don't have issues or aren't in
 
 4. Related to 3. A curved wing's curvature amount can only be changed for both of the curves.
 
-5. NACA airfoil generation cannot handle airfoils with zeroes in them. This can be fixed somewhat easily.
-
 ## Parameters
 
 ### Airfoil Parameters
