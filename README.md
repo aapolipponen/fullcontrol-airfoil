@@ -51,16 +51,19 @@ The wing has an circle that can be used to place an carbon fiber rod. The wing a
 
 ## Todo
 
-- [ ] More / better documentation
-- [ ] Issue #1 and #3: Wing spars and ribs (Spars mostly implemented)
-- [x] Issue #1: Infill
+- [x] Better documentation
+- [ ] Add example wings to the documentation.
+- [ ] Mesh generation. Fullcontrol is implementing that so it could be possibly just integrated into this.
+- [ ] Ellipses as an option for the generation of curved wings. [Example of an ellipse wing](Ellipse_wing_example.png)
+- [ ] More example wings to the documentation. [Issue #11](https://github.com/aapolipponen/fullcontrol-airfoil/issues/11)
+- [x] [Issue #1](https://github.com/aapolipponen/fullcontrol-airfoil/issues/1) and [Issue #3](https://github.com/aapolipponen/fullcontrol-airfoil/issues/3): Wing spars and ribs
+- [x] [Issue #1](https://github.com/aapolipponen/fullcontrol-airfoil/issues/1): Infill
 - [x] Creating elliptical wings
-- [ ] Vase mode implementation
+- [ ] Vase mode implementation. This one is kind of hard to do completely and not probably even worth it. It should be used more as an guideline. For example trying to minimize the travel moves and so on.
 - [ ] A feature to create shapes that remove / add to the wing. For example, to make a cutout for a control surface.
 - [ ] Issue #9: More infill options. Maybe hexagonal, rectilinear, or gyroid?
-- [ ] [Add more airfoil generation options](https://en.m.wikipedia.org/wiki/NACA_airfoil)
-- [ ] GUI?
-- [ ] Mesh generation?
+- [ ] [Add more airfoil generation options?](https://en.m.wikipedia.org/wiki/NACA_airfoil) Maybe 5-digit NACA airfoils?
+- [ ] GUI? Maybe a too big of a task.
 
 ## Known Limitations
 
@@ -73,8 +76,6 @@ Here are some bugs and possible enhancements that don't have issues or aren't in
 3. Curved wings are curved from all edges that are set as movable. You can't adjust, for example, the leading edge to be straight and the trailing edge to be curved.
 
 4. Related to 3. A curved wing's curvature amount can only be changed for both of the curves.
-
-5. NACA airfoil generation cannot handle airfoils with zeroes in them. This can be fixed somewhat easily.
 
 ## Parameters
 
@@ -224,13 +225,14 @@ More than 256 is excessive, and smaller than 70~ doesn't give the same aerodynam
 
 ## Some Terminology
 
-**Airfoil**: The shape of a wing. For example, if you look at a cut section of an aircraft wing, you see an airfoil. Eg. [NACA 2412](https://en.m.wikipedia.org/wiki/NACA_airfoil).
+**Airfoil**: The shape of a wing. For example, if you look at a cut section of an aircraft wing, you see an airfoil. Eg. NACA 2412 ![NACA 2412](documentation/NACA_2412.png)
 
-**NACA Airfoil**: A series of airfoil shapes developed by the National Advisory Committee for Aeronautics (NACA), the predecessor to NASA. The shapes are described using a series of digits following the word "NACA." This program uses the 4-Digit NACA airfoil system. The NACA airfoils can be calculated using a series of equations.
+
+**NACA Airfoil**: A series of airfoil shapes developed by the National Advisory Committee for Aeronautics (NACA), the predecessor to NASA. The shapes are described using a series of digits following the word "NACA." This program uses the 4-Digit NACA airfoil system. The NACA airfoils can be calculated using a series of formulas.
 
 **Chord** / **Chord length**: The straight-line distance from the leading edge to the trailing edge of an airfoil.
 
-**Leading Edge**: The part of the wing that first contacts the air; alternatively, the foremost edge of an airfoil section.
+**Leading Edge**: The front of the airfoil and the part that contacts the wind first.
 
 **Trailing Edge**: The rear of an airfoil.
 
