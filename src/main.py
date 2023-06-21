@@ -17,13 +17,16 @@ def calibration(bed_x_max, bed_y_max):
 def naca_airfoil(naca_num, num_points, chord_length):
     naca_length = len(naca_num)
     if naca_length != 4 and naca_length != 3:
-        raise ValueError("Invalid NACA number. Must be 4 digits long.")
+        raise ValueError("Invalid NACA number. Must be 4 or 3 digits long. See: https://en.m.wikipedia.org/wiki/NACA_airfoil#Four-digit_series for formatting.")
     m = int(naca_num[0]) / 100
     p = int(naca_num[1]) / 10
     t = int(naca_num[2:]) / 100
     x = np.linspace(0, 1, num_points)
     y_t = 5 * t * (0.2969 * np.sqrt(x) - 0.126 * x - 0.3516 * x**2 + 0.2843 * x**3 - 0.1015 * x**4)
-    yc = np.where(x < p, m / p**2 * (2 * p * x - x**2), m / (1 - p)**2 * ((1 - 2 * p) + 2 * p * x - x**2))
+    if p == 0:
+        yc = np.zeros_like(x)
+    else:
+        yc = np.where(x < p, m / p**2 * (2 * p * x - x**2), m / (1 - p)**2 * ((1 - 2 * p) + 2 * p * x - x**2))
     theta = np.arctan(np.gradient(yc, x))
     xu = x - y_t * np.sin(theta)
     xl = x + y_t * np.sin(theta)
