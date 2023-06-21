@@ -196,7 +196,7 @@ def loft_shapes():
 # Global Variables
 
 # Airfoil Parameters
-naca_nums = ['0012', '0012'] # NACA airfoil numbers (for NACA airfoil method)
+naca_nums = ['2412', '2412'] # NACA airfoil numbers (for NACA airfoil method)
 num_points = 128 # Resolution of airfoil - higher values give better quality but slower performance and larger file size for gcode
 
 # Wing Parameters
@@ -315,4 +315,4 @@ if print_rendering_plot_done:
 if print_time_taken:
     end = time.time()
     time_to_generate = end-start
-    print('Generated in: '+str(round(time_to_generate, 4))+' s')
+    print('Generated in: '+str(round(time_to_generate, 3))+' s')
