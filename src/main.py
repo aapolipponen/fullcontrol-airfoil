@@ -214,19 +214,19 @@ sort_point_order=True # Sorts the points of the airfoil to start and end at min_
 reverse_points_sorting=False # Reverse the direction that sort point order sorts the points to start and end at. If enabled makes the points start and end at max_x or x=chord_length.
 
 # Infill Parameters
-generate_infill = True
+generate_infill = False
 infill_density = 6 # Density of infill (higher values = denser infill)
 infill_reverse = False # Enable to reverse infill direction. Used if file_extraction makes the airfoil start at max x instead of min x.
 infill_rise = False # Enable to raise infill by half layer height when returning to start point of infill. Makes the hop from layer to layer smaller.
 infill_type = modified_triangle_wave_infill # Infill pattern type
 
 # Fully filled layer
-filled_layers_enabled = True
+filled_layers_enabled = False
 fill_angle = 45
 filled_layers = [0, 0.3, 0.6, 24.6, 24.9, 25.2, 49.8, 50.1, 50.4]
 
 # Circle Generation Parameters
-generate_circle = True
+generate_circle = False
 circle_centers = [ # Center points for start and end of circle
     {"start_center": fc.Point(x=43.8, y=1.35, z=min(z_positions)), "end_center": fc.Point(x=43.8, y=1.35, z=max(z_positions))},
 ]
@@ -277,7 +277,11 @@ printer_settings = {
     "bed_temp": 60, # Bed temperature in degrees Celsius
 }
 
-# Debug Setting
+# Plot Settings
+plot_neat_for_publishing = True # Hides travel moves and the coordinates so the plot is just a 3d view of the airfoil. Used in for example taking images for the documentation.
+plot_style = "tube" # Options: "tube" and "line". Tube shows the lines in 3d as, well tubes. The line option shows the lines as 2d lines.
+
+# Debug Settings
 print_total_layers = True
 print_rendering_plot = True
 print_rendering_plot_done = True
@@ -307,7 +311,11 @@ if gcode_generation:
 
 if print_rendering_plot:
     print("Rendering plot")
-fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', style="tube", neat_for_publishing = True, zoom = 0.8, hide_travel=True))
+    if plot_neat_for_publishing:
+        fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', style=plot_style, neat_for_publishing = True, zoom = 0.8, hide_travel=True, line_width=10))
+    else: 
+        fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', style=plot_style))
+
 
 if print_rendering_plot_done:
     print("Rendering done")
