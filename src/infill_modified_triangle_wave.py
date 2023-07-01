@@ -22,7 +22,7 @@ def add_step(steps, added, z, condition, direction):
         steps.append(closest if closest and closest.y >= 0 else fc.Point(x=added, y=0, z=z))
     return steps
 
-def modified_triangle_wave_infill(steps, z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise):
+def infill_modified_triangle_wave(steps, z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise):
     s_density = max_x / infill_density
 
     if infill_reverse:
