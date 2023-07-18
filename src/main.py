@@ -169,7 +169,7 @@ def loft_shapes():
 
             if generate_infill and not z in filled_layers:
                 max_x = max(point.x for point in airfoil)
-                if infill_type == infill_modified_triangle_wave_infill:
+                if infill_type == infill_modified_triangle_wave:
                     layer.extend(infill_modified_triangle_wave(layer, z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise))            
             
             if generate_circle and not z in filled_layers:
@@ -194,8 +194,6 @@ def loft_shapes():
     
     return steps
 
-
-
 steps = loft_shapes()
 
 if offset_wing:
@@ -217,7 +215,7 @@ if gcode_generation:
 if print_rendering_plot:
     print("Rendering plot")
     if plot_neat_for_publishing:
-        fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', style=plot_style, neat_for_publishing = True, zoom = 0.8, hide_travel=True, line_width=10))
+        fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', line_width=5, zoom = 0.8, neat_for_publishing = True))
     else: 
         fc.transform(steps, 'plot', fc.PlotControls(color_type='print_sequence', style=plot_style))
 
