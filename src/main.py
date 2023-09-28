@@ -169,7 +169,7 @@ def loft_shapes():
 
             if generate_infill and not z in filled_layers:
                 max_x = max(point.x for point in airfoil)
-                if infill_type == infill_modified_triangle_wave_infill:
+                if infill_type == infill_modified_triangle_wave:
                     layer.extend(infill_modified_triangle_wave(layer, z, min_x, max_x, infill_density, infill_reverse, layer_height, infill_rise))            
             
             if generate_circle and not z in filled_layers:
@@ -193,8 +193,6 @@ def loft_shapes():
             steps.extend(layer)
     
     return steps
-
-
 
 steps = loft_shapes()
 

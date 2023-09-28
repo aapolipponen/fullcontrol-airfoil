@@ -3,7 +3,7 @@ import fullcontrol as fc
 
 # Airfoil Parameters
 naca_nums = ['2412', '2412'] # NACA airfoil numbers (for NACA airfoil method)
-num_points = 128 # Resolution of airfoil - higher values give better quality but slower performance and larger file size for gcode
+num_points = 256 # Resolution of airfoil - higher values give better quality but slower performance and larger file size for gcode
 
 # Wing Parameters
 z_positions = [0, 100]  # Z-coordinates for each airfoil section
@@ -20,7 +20,7 @@ sort_point_order=True # Sorts the points of the airfoil to start and end at min_
 reverse_points_sorting=False # Reverse the direction that sort point order sorts the points to start and end at. If enabled makes the points start and end at max_x or x=chord_length.
 
 # Infill Parameters
-generate_infill = False
+generate_infill = True
 infill_density = 6 # Density of infill (higher values = denser infill)
 infill_reverse = False # Enable to reverse infill direction. Used if file_extraction makes the airfoil start at max x instead of min x.
 infill_rise = False # Enable to raise infill by half layer height when returning to start point of infill. Makes the hop from layer to layer smaller.
