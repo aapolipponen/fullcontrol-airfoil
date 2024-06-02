@@ -54,7 +54,7 @@ The wing has an circle that can be used to place an carbon fiber rod. The wing a
 - [x] Better documentation
 - [ ] Add example wings to the documentation.
 - [ ] Mesh generation. Fullcontrol is implementing that so it could be possibly just integrated into this.
-- [ ] Ellipses as an option for the generation of curved wings. [Example of an ellipse wing](Ellipse_wing_example.png)
+- [ ] Ellipses as an option for the generation of curved wings. [Example of an ellipse wing](documentation/Ellipse_wing_example.png)
 - [ ] More example wings to the documentation. [Issue #11](https://github.com/aapolipponen/fullcontrol-airfoil/issues/11)
 - [x] [Issue #1](https://github.com/aapolipponen/fullcontrol-airfoil/issues/1) and [Issue #3](https://github.com/aapolipponen/fullcontrol-airfoil/issues/3): Wing spars and ribs
 - [x] [Issue #1](https://github.com/aapolipponen/fullcontrol-airfoil/issues/1): Infill
