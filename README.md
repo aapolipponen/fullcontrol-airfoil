@@ -52,7 +52,7 @@ The wing has an circle that can be used to place an carbon fiber rod. The wing a
 ## Todo
 
 - [x] Better documentation
-- [ ] Add example wings to the documentation.
+- [x] Add example wings to the documentation.
 - [ ] Mesh generation. Fullcontrol is implementing that so it could be possibly just integrated into this.
 - [ ] Ellipses as an option for the generation of curved wings. [Example of an ellipse wing](documentation/Ellipse_wing.png)
 - [ ] More example wings to the documentation. [Issue #11](https://github.com/aapolipponen/fullcontrol-airfoil/issues/11)
@@ -61,7 +61,7 @@ The wing has an circle that can be used to place an carbon fiber rod. The wing a
 - [x] Creating elliptical wings
 - [ ] Vase mode implementation. This one is kind of hard to do completely and not probably even worth it. It should be used more as an guideline. For example trying to minimize the travel moves and so on.
 - [ ] A feature to create shapes that remove / add to the wing. For example, to make a cutout for a control surface.
-- [ ] Issue #9: More infill options. Maybe hexagonal, rectilinear, or gyroid?
+- [ ] [Issue #9](https://github.com/aapolipponen/fullcontrol-airfoil/issues/9): More infill options. Maybe hexagonal, rectilinear, or gyroid?
 - [ ] [Add more airfoil generation options?](https://en.m.wikipedia.org/wiki/NACA_airfoil) Maybe 5-digit NACA airfoils?
 - [ ] GUI? Maybe a too big of a task.
 
